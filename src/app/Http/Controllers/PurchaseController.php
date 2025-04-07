@@ -12,6 +12,7 @@ use App\Models\Trade;
 use App\Http\Requests\EditAddressRequest;
 use App\Http\Requests\PurchaseRequest;
 use Stripe\StripeClient;
+use Illuminate\Http\JsonResponse;
 
 class PurchaseController extends Controller
 {
@@ -22,22 +23,24 @@ class PurchaseController extends Controller
         $this->stripeClient = $stripeClient;
     }
 
-    // 購入画面表示
-    public function purchase(Request $request, $itemId)
+    // 購入情報取得
+    public function purchase(Request $request, $itemId): JsonResponse
     {
         $item = Item::where('id', $itemId)->first();
         $user = User::findOrFail(Auth::id());
         $paymentMethods = PaymentMethod::get();
-        $purchase =  Purchase::where('item_id', $itemId)->exists();
+        $purchase = Purchase::where('item_id', $itemId)->exists();
 
-        // 円形式変換
-        $item->price = number_format($item->price);
-
-        return view('purchase', compact('user', 'item', 'paymentMethods', 'purchase'));
+        return response()->json([
+            'user' => $user,
+            'item' => $item,
+            'paymentMethods' => $paymentMethods,
+            'purchase' => $purchase
+        ]);
     }
 
-    // 配送先住所変更画面表示
-    public function edit(Request $request)
+    // 配送先住所変更情報取得
+    public function edit(Request $request): JsonResponse
     {
         $user = auth()->user();
         $itemId = $request->item_id;
@@ -48,20 +51,23 @@ class PurchaseController extends Controller
             $user->payment_method_id = $request->payment_method;
         }
 
-        return view('edit-address', compact('user', 'itemId'));
+        return response()->json([
+            'user' => $user,
+            'itemId' => $itemId
+        ]);
     }
 
     // 配送先住所を変更処理
-    public function update(EditAddressRequest $request)
+    public function update(EditAddressRequest $request): JsonResponse
     {
         $user = auth()->user();
-        $currentUserData  = [
+        $currentUserData = [
             'shipping_post_code' => $user->shipping_post_code,
             'shipping_address' => $user->shipping_address,
             'shipping_building' => $user->shipping_building,
         ];
 
-        $updateData  = [
+        $updateData = [
             'shipping_post_code' => $request->shipping_post_code,
             'shipping_address' => $request->shipping_address,
             'shipping_building' => $request->shipping_building,
@@ -69,22 +75,22 @@ class PurchaseController extends Controller
 
         // 変更なしの場合は更新処理およびメッセージなし
         if ($currentUserData == $updateData) {
-            return redirect()->route('purchase', ['item_id' => $request->item_id]);
+            return response()->json(['message' => '変更はありません']);
         }
 
         User::where('id', $user->id)->update($updateData);
-        return redirect()->route('purchase', ['item_id' => $request->item_id])->with('message', '配送先住所を変更しました');
+        return response()->json(['message' => '配送先住所を変更しました']);
     }
 
     // 購入処理
-    public function buy()
+    public function buy(): JsonResponse
     {
         $user = auth()->user();
         $requestData = session('request_data', []);
         $user = Auth::user();
 
         if (!$requestData) {
-            return redirect('/mypage')->with('error', '決済情報が見つかりません');
+            return response()->json(['error' => '決済情報が見つかりません'], 400);
         }
 
         $purchase = Purchase::create([
@@ -101,11 +107,11 @@ class PurchaseController extends Controller
             'is_complete' => false,
         ]);
 
-        return redirect('/mypage')->with('message', '商品を購入しました');
+        return response()->json(['message' => '商品を購入しました']);
     }
 
-    // Stripeセッション
-    public function createCheckoutSession(PurchaseRequest $request)
+    // Stripeセッション作成
+    public function createCheckoutSession(PurchaseRequest $request): JsonResponse
     {
         $user = auth()->user();
         $item = Item::where('id', $request->item_id)->first();
@@ -124,16 +130,16 @@ class PurchaseController extends Controller
                     'quantity' => 1,
                 ]],
                 'mode' => 'payment',
-                'customer_email' =>  $user->email,
+                'customer_email' => $user->email,
                 'success_url' => url('/purchase/buy'),
                 'cancel_url' => url('/purchase/' . $request->item_id),
             ]);
 
             session()->put('request_data', $request->all());
 
-            return redirect($session->url);
+            return response()->json(['url' => $session->url]);
         } catch (\Exception $e) {
-            return back()->with('error', 'チェックアウトセッションの生成に失敗しました ' . $e->getMessage());
+            return response()->json(['error' => 'チェックアウトセッションの生成に失敗しました ' . $e->getMessage()], 500);
         }
     }
 }

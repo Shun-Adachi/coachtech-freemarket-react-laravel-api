@@ -10,25 +10,18 @@ use App\Models\Comment;
 use App\Models\CategoryItem;
 use App\Models\Purchase;
 use App\Http\Requests\CommentRequest;
+use Illuminate\Http\JsonResponse;
 
 class ItemController extends Controller
 {
-
-    // 商品一覧ページ表示
-    public function index(Request $request)
+    // 商品一覧取得
+    public function index(Request $request): JsonResponse
     {
         // ユーザー情報・タブ情報・検索取得
         $user = Auth::user();
         $userId = $user->id ?? null;
         $tab = $request->tab;
-        if ($request->isMethod('post')) {
-            $keyword = $request->input('keyword', '');
-            session()->put('keyword', $keyword);
-        } elseif (session('keyword')) {
-            $keyword = session('keyword');
-        } else {
-            $keyword = "";
-        }
+        $keyword = $request->input('keyword', '');
 
         // マイリスト
         if ($tab === 'mylist') {
@@ -42,11 +35,14 @@ class ItemController extends Controller
 
         $soldItemIds = Purchase::pluck('item_id')->toArray();
 
-        return view('index', compact('items', 'tab', 'soldItemIds'));
+        return response()->json([
+            'items' => $items,
+            'soldItemIds' => $soldItemIds
+        ]);
     }
 
-    // 商品詳細ページ表示
-    public function show(Request $request, $itemId)
+    // 商品詳細取得
+    public function show(Request $request, $itemId): JsonResponse
     {
         // ユーザー情報取得
         $user = Auth::user();
@@ -54,12 +50,9 @@ class ItemController extends Controller
 
         // 商品詳細取得
         $item = Item::with(['user', 'condition'])->where('id', $itemId)->first();
-        $purchase =  Purchase::where('item_id', $itemId)->exists();
+        $purchase = Purchase::where('item_id', $itemId)->exists();
 
-        // 円形式変換
-        $item->price = number_format($item->price);
-
-        // お気に入り情報取得
+        $isFavorite = false;
         if ($userId) {
             $isFavorite = Favorite::where('item_id', $itemId)->where('user_id', $userId)->exists();
         } else {
@@ -75,11 +68,19 @@ class ItemController extends Controller
         // 関連カテゴリー取得
         $itemCategories = CategoryItem::with('category')->where('item_id', $itemId)->get();
 
-        return view('item', compact('item', 'purchase', 'isFavorite', 'favoritesCount', 'comments', 'commentsCount', 'itemCategories'));
+        return response()->json([
+            'item' => $item,
+            'purchase' => $purchase,
+            'isFavorite' => $isFavorite,
+            'favoritesCount' => $favoritesCount,
+            'comments' => $comments,
+            'commentsCount' => $commentsCount,
+            'itemCategories' => $itemCategories
+        ]);
     }
 
     // お気に入り登録・解除処理
-    public function favorite($itemId)
+    public function favorite($itemId): JsonResponse
     {
         // お気に入り情報取得
         $user = Auth::user();
@@ -88,21 +89,21 @@ class ItemController extends Controller
         // 解除
         if ($favorite) {
             Favorite::find($favorite->id)->delete();
-        }
-        // 登録
-        else {
+            $message = 'お気に入りを解除しました';
+        } else {
             $favorite = [
                 'user_id' => $user->id,
                 'item_id' => $itemId,
             ];
             Favorite::create($favorite);
+            $message = 'お気に入りに登録しました';
         }
 
-        return redirect()->back();
+        return response()->json(['message' => $message]);
     }
 
     // コメント追加処理
-    public function comment(CommentRequest $request)
+    public function comment(CommentRequest $request): JsonResponse
     {
         $user = Auth::user();
         $comment = [
@@ -110,8 +111,11 @@ class ItemController extends Controller
             'user_id' => $user->id,
             'item_id' => $request->item_id,
         ];
-        Comment::create($comment);
+        $newComment = Comment::create($comment);
 
-        return redirect()->back()->with('message', 'コメントを送信しました');
+        return response()->json([
+            'message' => 'コメントを送信しました',
+            'comment' => $newComment
+        ]);
     }
 }

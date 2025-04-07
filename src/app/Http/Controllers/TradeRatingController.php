@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 use App\Models\Trade;
-
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class TradeRatingController extends Controller
 {
-    public function store(Request $request, Trade $trade)
+    public function store(Request $request, Trade $trade): JsonResponse
     {
         $request->validate([
             'rating' => 'required|integer|min:1|max:5',
@@ -22,7 +22,9 @@ class TradeRatingController extends Controller
 
         $trade->save();
 
-        return redirect('/')->with('message', '取引評価を送信しました。');
+        return response()->json([
+            'message' => '取引評価を送信しました。',
+            'trade' => $trade
+        ]);
     }
-
 }

@@ -9,22 +9,26 @@ use App\Models\Category;
 use App\Models\CategoryItem;
 use App\Models\Condition;
 use App\Http\Requests\SellRequest;
+use Illuminate\Http\JsonResponse;
 
 class SellController extends Controller
 {
-
-    // 出品画面表示
-    public function sell(Request $request)
+    // 出品情報取得
+    public function sell(Request $request): JsonResponse
     {
         $user = Auth::user();
         $categories = Category::get();
         $conditions = Condition::get();
 
-        return view('sell', compact('user', 'categories', 'conditions'));
+        return response()->json([
+            'user' => $user,
+            'categories' => $categories,
+            'conditions' => $conditions
+        ]);
     }
 
     // 出品処理
-    public function store(SellRequest $request)
+    public function store(SellRequest $request): JsonResponse
     {
         $user = Auth::user();
 
@@ -51,6 +55,9 @@ class SellController extends Controller
             ]);
         }
 
-        return redirect('/mypage?tab=sell')->with('message', '商品を出品しました');
+        return response()->json([
+            'message' => '商品を出品しました',
+            'item' => $item
+        ]);
     }
 }

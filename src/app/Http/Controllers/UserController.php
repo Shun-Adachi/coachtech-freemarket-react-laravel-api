@@ -10,11 +10,12 @@ use App\Models\Trade;
 use App\Models\User;
 use App\Models\Item;
 use App\Models\Purchase;
+use Illuminate\Http\JsonResponse;
 
 class UserController extends Controller
 {
-    // プロフィール画面表示
-    public function index(Request $request)
+    // プロフィール情報取得
+    public function index(Request $request): JsonResponse
     {
         // ユーザー情報・タブ情報取得
         $user = Auth::user();
@@ -77,9 +78,7 @@ class UserController extends Controller
         // 出品した商品の場合、商品リストを更新
         if ($tab === 'sell') {
             $items = Item::where('user_id', $userId)->get();
-        }
-        // 購入した商品の場合、商品リストを更新
-        else if(!$tab){
+        } else if(!$tab) {
             $purchaseItemIds = Purchase::where('user_id', $userId)->pluck('item_id');
             $items = Item::whereIn('id', $purchaseItemIds)->get();
         }
@@ -114,25 +113,31 @@ class UserController extends Controller
         // 平均値処理
         $averageTradeRating = $ratingCount > 0 ? round($totalRating / $ratingCount) : 0;
 
-        return view('mypage', compact('user', 'items', 'totalTradePartnerMessages', 'averageTradeRating','ratingCount', 'tab'));
+        return response()->json([
+            'user' => $user,
+            'items' => $items,
+            'totalTradePartnerMessages' => $totalTradePartnerMessages,
+            'averageTradeRating' => $averageTradeRating,
+            'ratingCount' => $ratingCount,
+            'tab' => $tab
+        ]);
     }
 
-    // プロフィール編集ページ表示
-    public function edit(Request $request)
+    // プロフィール編集情報取得
+    public function edit(Request $request): JsonResponse
     {
         //表示
         $user = Auth::user();
-        return view('edit-profile', compact('user'));
+        return response()->json(['user' => $user]);
     }
 
     // プロフィール更新
-    public function update(UserRequest $request)
+    public function update(UserRequest $request): JsonResponse
     {
         $user = auth()->user();
         $tempImage = $request->temp_image;
 
-        // 更新前データ
-        $currentUserData  = [
+        $currentUserData = [
             'name' => $user->name,
             'current_post_code' => $user->current_post_code,
             'current_address' => $user->current_address,
@@ -146,16 +151,11 @@ class UserController extends Controller
             $this->deleteThumbnail($user->thumbnail_path);
             // ファイルを保存し、パスを取得
             $thumbnailPath = $request->file('image')->store('images/users/', 'public');
-        }
-        // 画像選択なし、一時ファイルあり
-        elseif ($tempImage) {
-            // 古い画像を削除
+        } elseif ($tempImage) {
             $this->deleteThumbnail($user->thumbnail_path);
             // 一時ファイルを移動し、パスを取得
             $thumbnailPath = moveTempImageToPermanentLocation($tempImage, 'images/users/');
-        }
-        // 画像選択なし、一時ファイルなし
-        else {
+        } else {
             $thumbnailPath = $user->thumbnail_path;
         }
 
@@ -170,7 +170,7 @@ class UserController extends Controller
 
         // 変更なしの場合は更新処理およびメッセージなし
         if ($currentUserData == $updateData) {
-            return redirect('/mypage/profile');
+            return response()->json(['message' => '変更はありません']);
         }
 
         //初回ログイン時は現住所と送付先を同時に変更
@@ -184,18 +184,18 @@ class UserController extends Controller
         }
 
         User::where('id', $request->id)->update($updateData);
-        return redirect('/')->with('message', 'プロフィールが更新されました');
+        return response()->json(['message' => 'プロフィールが更新されました']);
     }
 
     // ログアウト処理
-    public function logout()
+    public function logout(): JsonResponse
     {
         Auth::logout();
-        return redirect('/')->with('message', 'ログアウトしました');
+        return response()->json(['message' => 'ログアウトしました']);
     }
 
-    //ユーザープロフィール画像削除
-    public function deleteThumbnail($thumbnailPath)
+    // ユーザープロフィール画像削除
+    private function deleteThumbnail($thumbnailPath): void
     {
         $dummyDataDirectory = 'default/users/';
         if ($thumbnailPath && !str_starts_with($thumbnailPath, $dummyDataDirectory)) {

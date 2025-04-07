@@ -8,11 +8,12 @@ use App\Http\Requests\TradeMessageRequest;
 use App\Http\Requests\TradeMessageUpdateRequest;
 use App\Models\Trade;
 use App\Models\TradeMessage;
+use Illuminate\Http\JsonResponse;
 
 class TradeMessageController extends Controller
 {
-    // 取引メッセージページ表示
-    public function index(Trade $trade, Request $request)
+    // 取引メッセージ取得
+    public function index(Trade $trade, Request $request): JsonResponse
     {
         // 現在のユーザー取得
         $user = Auth::user();
@@ -21,12 +22,9 @@ class TradeMessageController extends Controller
         // 自身に関連する取引および商品情報取得
         $trade->load('purchase.item.user', 'purchase.user');
         $item = $trade->purchase->item;
-        if ($trade->purchase->user->id == $userId) {
-            $tradePartner = $trade->purchase->item->user;
-        } else {
-            $tradePartner = $trade->purchase->user;
-        }
-        $item->price = number_format($item->price);
+        $tradePartner = $trade->purchase->user->id == $userId
+            ? $trade->purchase->item->user
+            : $trade->purchase->user;
 
         // 相手のメッセージを全て既読に更新
         TradeMessage::where('trade_id', $trade->id)
@@ -39,12 +37,9 @@ class TradeMessageController extends Controller
             ->orderBy('created_at', 'asc')
             ->get();
 
-        // 編集対象のメッセージを取得
-        $editingMessageId = session('editingMessageId');
-
         // 取引が自分に関係しているもので評価を入力していないものを表示
         $sidebarTrades = Trade::with(['purchase.item', 'tradeMessages'])
-            ->where('id', '!=',  $trade->id)
+            ->where('id', '!=', $trade->id)
             ->where(function($query) use ($userId) {
                 $query->where(function ($q) use ($userId) {
                     // 自分が購入者の場合、buyer_rating_pointsがnull
@@ -60,16 +55,22 @@ class TradeMessageController extends Controller
             })
             ->get();
 
-        return view('trade-chat', compact('trade','messages','sidebarTrades','item','tradePartner', 'editingMessageId'));
+        return response()->json([
+            'trade' => $trade,
+            'messages' => $messages,
+            'sidebarTrades' => $sidebarTrades,
+            'item' => $item,
+            'tradePartner' => $tradePartner
+        ]);
     }
 
     // メッセージ保存処理
-    public function store(TradeMessageRequest $request, Trade $trade)
+    public function store(TradeMessageRequest $request, Trade $trade): JsonResponse
     {
         $tradeMessage = new TradeMessage();
-        $tradeMessage->user_id  = Auth::id();   // 送信者のユーザーID
-        $tradeMessage->trade_id = $trade->id;   // 該当の取引ID
-        $tradeMessage->message  = $request->message;
+        $tradeMessage->user_id = Auth::id();
+        $tradeMessage->trade_id = $trade->id;
+        $tradeMessage->message = $request->message;
 
         // 画像がアップロードされている場合の処理
         if ($request->hasFile('image')) {
@@ -78,28 +79,27 @@ class TradeMessageController extends Controller
         }
 
         $tradeMessage->save();
-        return redirect('/trades' . '/' . $trade->id . '/messages')->with('message', 'メッセージを送信しました。');
+        return response()->json([
+            'message' => 'メッセージを送信しました。',
+            'tradeMessage' => $tradeMessage
+        ]);
     }
 
-    // 編集モード表示
-    public function edit(Trade $trade, TradeMessage $message)
-    {
-        session()->flash('editingMessageId', $message->id);
-        return redirect('/trades' . '/' . $trade->id . '/messages');
-    }
-
-    // 既存のメッセージ更新処理
-    public function update(TradeMessageUpdateRequest $request, Trade $trade, TradeMessage $message)
+    // メッセージ更新処理
+    public function update(TradeMessageUpdateRequest $request, Trade $trade, TradeMessage $message): JsonResponse
     {
         $message->message = $request->updateMessage;
         $message->save();
-        return redirect('/trades' . '/' . $trade->id . '/messages')->with('message', 'メッセージが更新されました。');
+        return response()->json([
+            'message' => 'メッセージが更新されました。',
+            'tradeMessage' => $message
+        ]);
     }
 
-    // 削除処理
-    public function destroy(Trade $trade, TradeMessage $message)
+    // メッセージ削除処理
+    public function destroy(Trade $trade, TradeMessage $message): JsonResponse
     {
         $message->delete();
-        return redirect('/trades' . '/' . $trade->id . '/messages')->with('message', 'メッセージが削除されました。');
+        return response()->json(['message' => 'メッセージが削除されました。']);
     }
 }

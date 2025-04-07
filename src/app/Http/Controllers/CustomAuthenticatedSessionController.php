@@ -10,6 +10,7 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class CustomAuthenticatedSessionController extends Controller
 {
@@ -23,15 +24,15 @@ class CustomAuthenticatedSessionController extends Controller
 
     // ログイン処理
 
-    public function store(LoginRequest $request)
+    public function store(LoginRequest $request): JsonResponse
     {
         $credentials = $request->only(['email', 'password']);
         $user = User::where('email', $credentials['email'])->first();
 
         if (!$user || !Auth::validate($credentials)) {
-            throw ValidationException::withMessages([
-                'password' => ['パスワードが間違っています'],
-            ]);
+            return response()->json([
+                'error' => 'パスワードが間違っています'
+            ], 401);
         }
 
         // 一時トークンを生成
@@ -42,17 +43,21 @@ class CustomAuthenticatedSessionController extends Controller
         // 認証メールを送信
         Mail::to($user->email)->send(new LoginNotification($token));
 
-        return redirect()->route('login')->withInput()->with('message', 'ログインメールを送信しました');
+        return response()->json([
+            'message' => 'ログインメールを送信しました'
+        ]);
     }
 
     // 認証ログイン
-    public function verifyLogin(Request $request)
+    public function verifyLogin(Request $request): JsonResponse
     {
         $token = $request->query('token');
         $user = User::where('login_token', $token)->first();
 
         if (!$user) {
-            return redirect('/login')->withErrors(['error' => 'ログインに失敗しました']);
+            return response()->json([
+                'error' => 'ログインに失敗しました'
+            ], 401);
         }
 
         // トークンを無効化し、ログイン
@@ -60,6 +65,9 @@ class CustomAuthenticatedSessionController extends Controller
         $user->save();
         Auth::login($user);
 
-        return redirect('/')->with('message', 'ログインしました');
+        return response()->json([
+            'message' => 'ログインしました',
+            'user' => $user
+        ]);
     }
 }
