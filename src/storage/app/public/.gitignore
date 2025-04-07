@@ -1,0 +1,12 @@
+*
+!default
+!default/items
+!default/items/*
+!default/users
+!default/users/*
+!images
+!images/items
+!images/users
+!temp
+!messages
+!.gitignore

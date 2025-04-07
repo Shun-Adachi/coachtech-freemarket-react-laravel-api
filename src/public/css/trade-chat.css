@@ -1,0 +1,536 @@
+.content {
+    padding-top: 0;
+}
+
+.alert__message {
+    position: relative;
+}
+
+.trade-container {
+    display: flex;
+}
+
+.trade-sidebar {
+    width: 23%;
+    max-width: 260px;
+    padding: 30px;
+    min-height: 100vh;
+    background-color: #868686;
+}
+
+.trade-sidebar__heading {
+    width: 100%;
+    margin: auto auto 50px auto;
+    padding: auto;
+    color: #ffffff;
+    text-align: center;
+    font-family: Inter;
+    font-size: 30px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: normal;
+    letter-spacing: 3px;
+}
+
+.trade-sidebar__list {
+    width: 100%;
+    list-style: none;
+    padding-left: 0;
+}
+
+.trade-sidebar__list--item {
+    width: 100%;
+    height: 40px;
+    margin-bottom: 40px;
+    border-radius: 5px;
+    background: #eeefeb;
+    text-align: center;
+}
+
+.trade-sidebar__list--link {
+    display: block;
+    width: 100%;
+    height: 40px;
+    text-decoration: none;
+    color: #000;
+    font-family: Inter;
+    font-size: 24px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 40px;
+}
+
+.trade-main {
+    flex: 1;
+}
+
+.trade-main__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: solid #5f5f5f 2px;
+}
+
+.trade-partner {
+    display: flex;
+    margin-left: 3%;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.trade-partner__image {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: contain;
+    background-color: #e0e0e0;
+}
+
+.trade-partner__heading {
+    margin: auto;
+    color: #000;
+    font-family: Inter;
+    font-size: 36px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: normal;
+}
+
+.trade-main__complete-button {
+    display: inline-block;
+    width: 170px;
+    height: 50px;
+    margin-right: 20px;
+    border-radius: 30px;
+    border: none;
+    background: #ff8282;
+    color: #fff;
+    font-family: Inter;
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: 50px;
+    text-decoration: none;
+    text-align: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+.trade-main__complete-message {
+    display: inline-block;
+    width: 170px;
+    height: 50px;
+    margin-right: 3%;
+    border-radius: 5px;
+    border: none;
+    background: #ee7777;
+    color: #ffffff;
+    font-family: Inter;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: 50px;
+    text-decoration: none;
+    text-align: center;
+    align-items: center;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.item-info {
+    display: flex;
+    gap: 1rem;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: solid #5f5f5f 2px;
+}
+
+.item-info__left {
+    flex: 0 0 auto;
+    margin-left: 3%;
+}
+
+.item-info__image {
+    width: 200px;
+    height: 200px;
+    object-fit: contain;
+}
+
+.item-info__right {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.item-info__heading {
+    margin-top: 0px;
+    margin-bottom: 0px;
+    color: #000;
+    font-family: Inter;
+    font-size: 48px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: normal;
+}
+
+.item-info__price {
+    margin-top: 0px;
+    margin-bottom: 0px;
+    color: #000;
+    font-family: Inter;
+    font-size: 36px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+}
+
+.chat-messages {
+    margin-left: 2%;
+    margin-right: 2%;
+    margin-bottom: 1rem;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+
+.message-container--mine {
+    margin-bottom: 1rem;
+    text-align: right;
+}
+
+.message-container--others {
+    margin-bottom: 1rem;
+    text-align: left;
+}
+
+.message-header {
+}
+
+.message-header__name {
+    margin-left: 20px;
+    margin-right: 20px;
+    color: #000;
+    font-family: Inter;
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: normal;
+}
+
+.message-header__image {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: #e0e0e0;
+    object-fit: contain;
+}
+
+.message-body--mine {
+    text-align: right;
+}
+
+.message-body--others {
+    text-align: left;
+}
+
+.message-container__message {
+    width: 70%;
+    height: 60px;
+    margin-top: 0.5rem;
+    padding: 1rem;
+    border-radius: 4px;
+    border: none;
+    background: #d9d9d9;
+    cursor: default;
+    color: #000000;
+    font-family: Inter;
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: normal;
+    resize: none;
+    overflow: hidden;
+}
+
+.message-container__image--mine {
+    max-width: 400px;
+    max-height: 400px;
+    display: block;
+    margin-left: auto;
+    margin-right: 0;
+    margin-top: 0.3rem;
+}
+
+.message-container__image--others {
+    max-width: 400px;
+    max-height: 400px;
+    display: block;
+    margin-left: 0;
+    margin-right: auto;
+    margin-top: 0.3rem;
+}
+
+.message-actions {
+    margin-top: 0.5rem;
+    display: inline;
+}
+
+.message-actions__form {
+    display: inline;
+}
+
+.message-actions__button {
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #5f5f5f;
+    text-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+    font-family: Inter;
+    font-size: 15px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+}
+
+.message-edit-form {
+    align-items: center;
+    justify-content: right;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.message-edit-form__controls {
+    display: flex;
+    align-items: center;
+    justify-content: right;
+    gap: 0.5rem;
+}
+
+.message-edit-form__textarea {
+    width: 70%;
+    height: 60px;
+    margin-top: 0.5rem;
+    padding: 1rem;
+    border-radius: 4px;
+    border: 1px solid #5f5f5f;
+    background: #ffffff;
+    color: #000000;
+    font-family: Inter;
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: normal;
+    resize: none;
+    overflow: hidden;
+}
+
+.message-edit-form__image-label {
+    display: block;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+}
+
+.message-edit-form__submit {
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.message-edit-form__submit--image {
+    height: 32px;
+    width: auto;
+}
+
+.message-form {
+    margin-bottom: 1rem;
+    padding: 0px 1rem;
+}
+
+.message-form__filename-wrapper {
+}
+
+.message-form__filename {
+    color: #000000;
+    font-family: Inter;
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: normal;
+}
+
+.message-form__controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 20px;
+    padding-right: 30px;
+}
+
+.message-form__message {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    height: 44px;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #5f5f5f;
+    background: #ffffff;
+    color: #000000;
+    font-family: Inter;
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: 24px;
+    resize: none;
+    overflow: hidden;
+}
+
+.message-form__image--label {
+    display: flex;
+    align-items: center;
+    width: 140px;
+    height: 44px;
+    padding: auto;
+    border-radius: 10px;
+    border: 2px solid #f55;
+    display: inline-block;
+    color: #f55;
+    text-align: center;
+    font-family: Inter;
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: 40px;
+    cursor: pointer;
+}
+
+.message-form__image--input {
+    display: none;
+}
+
+.message-form__button--active {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+
+.message-form__button--inactive {
+    background: none;
+    border: none;
+    cursor: not-allowed;
+    pointer-events: none;
+    padding: 0;
+}
+
+.message-form__button--image {
+    height: 60px;
+}
+
+.message-form__errors {
+    background-color: #fdd;
+    border: 1px solid #f99;
+    margin: 1rem;
+    padding: 0.5rem;
+    border-radius: 4px;
+}
+
+.message-form__errors ul {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+.message-form__errors li {
+    color: #900;
+    font-family: Inter;
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: normal;
+}
+
+@media (max-width: 1200px) {
+    .trade-sidebar {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    .trade-sidebar__heading {
+        font-size: 22px;
+        letter-spacing: 2px;
+    }
+
+    .trade-sidebar__list--link {
+        font-size: 18px;
+    }
+
+    .trade-partner__image {
+        width: 60px;
+        height: 60px;
+    }
+
+    .trade-partner__heading {
+        font-size: 24px;
+    }
+
+    .trade-main__complete-button {
+        margin-right: 5px;
+        width: 140px;
+        font-size: 16px;
+    }
+
+    .trade-main__complete-message {
+        margin-right: 5px;
+        width: 170px;
+        font-size: 16px;
+    }
+    .item-info__heading {
+        font-size: 36px;
+    }
+
+    .trade-partner {
+        display: flex;
+        margin-left: 5px;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .trade-partner__heading {
+    }
+
+    .message-container__image--mine {
+        max-width: 300px;
+        max-height: 300px;
+    }
+
+    .message-container__image--others {
+        max-width: 300px;
+        max-height: 300px;
+    }
+
+    .message-container__message {
+        font-size: 16px;
+    }
+
+    .message-edit-form__textarea {
+        font-size: 16px;
+    }
+
+    .message-form__controls {
+        padding-right: 0px;
+    }
+
+    .message-form__message {
+        font-size: 16px;
+    }
+
+    .message-form__button--image {
+        height: 40px;
+    }
+}

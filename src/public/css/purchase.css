@@ -1,0 +1,184 @@
+.purchase-content {}
+
+.purchase-form {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 60px 40px;
+}
+
+.purchase-information {
+  width: 70%;
+}
+
+.item-information {
+  display: flex;
+  padding-bottom: 40px;
+  border-bottom: 2px #808080 solid;
+}
+
+.purchase-form__image {
+  width: 45%;
+  min-width: 160px;
+  min-height: 160px;
+  margin-right: 2%;
+  object-fit: contain;
+  background-color: #e0e0e0;
+}
+
+.purchase-form__item-group {}
+
+.purchase-form__text--item {
+  margin: 0;
+  padding-bottom: 10px;
+  font-size: x-large;
+  font-weight: bold;
+
+}
+
+.payment-method {
+  padding-top: 20px;
+  padding-bottom: 40px;
+  border-bottom: 2px #808080 solid;
+}
+
+.purchase-form__label {
+  display: block;
+  margin-left: 20px;
+  margin-bottom: 20px;
+  font-size: large;
+  font-weight: bold;
+}
+
+.purchase-form__select {
+  margin-left: 5%;
+  height: 25px;
+  padding-right: 100px;
+  background-color: #808080;
+  border-radius: 3px;
+  color: #ffffff;
+}
+
+.purchase-address {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  padding-top: 20px;
+  padding-bottom: 40px;
+  border-bottom: 2px #808080 solid;
+}
+
+.purchase-address__group {
+  width: 100%;
+}
+
+.purchase-address__sub-group {
+  display: flex;
+  width: 100%;
+}
+
+.purchase-form__text--address {
+  width: 40px;
+  padding-left: 20px;
+  border: none;
+  font-size: large;
+  font-weight: bold;
+}
+
+.purchase-form__input {
+  width: 100%;
+  margin: 10px 0px;
+  border: none;
+  font-size: medium;
+  font-weight: bold;
+}
+
+.purchase-form__input:focus {
+  outline: none;
+  border: none;
+}
+
+.purchase-form__link {
+  display: block;
+  width: 80px;
+  height: 100%;
+  margin-top: 0;
+  border: none;
+  background-color: rgba(0, 0, 0, 0);
+  text-decoration: none;
+  align-items: normal;
+  color: #0073CC;
+  cursor: pointer;
+}
+
+.payment-summary {
+  width: 250px;
+  min-width: 250px;
+  margin-left: 3%;
+
+}
+
+.purchase-form__table {
+  width: 100%;
+  text-align: center;
+}
+
+.purchase-form__row {
+  width: 100%;
+  height: 80px;
+  border: 2px #808080 solid;
+}
+
+.purchase-form__cell {
+  width: 50%;
+}
+
+.purchase-form__button--active {
+  width: 100%;
+  height: 40px;
+  margin: 60px 0px 100px 0px;
+  background-color: #ff5454;
+  border: none;
+  border-radius: 5px;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.purchase-form__button--inactive {
+  width: 100%;
+  height: 40px;
+  margin: 60px 0px 100px 0px;
+  background-color: #c0c0c0;
+  border: none;
+  border-radius: 5px;
+  color: #ffffff;
+  cursor: default;
+  pointer-events: none;
+}
+
+.purchase-form__error-message {
+  height: 20px;
+  margin: 0;
+  padding-left: 40px;
+  color: #f05454;
+}
+
+@media (max-width: 1200px) {
+  .purchase-form__text--item {
+    margin: 0;
+    padding-bottom: 10px;
+    font-size: large;
+    font-weight: bold;
+
+  }
+
+  .purchase-form__text--address {
+    width: 40px;
+    padding-left: 20px;
+    border: none;
+    font-size: medium;
+    font-weight: bold;
+  }
+}
