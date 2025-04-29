@@ -7,7 +7,13 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable
+/**
+ * App\Models\User
+ *
+ * @method \Laravel\Sanctum\NewAccessToken createToken(string $name, array $abilities = ['*'])
+ */
+
+ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 

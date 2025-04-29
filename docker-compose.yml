@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   nginx:
@@ -10,6 +10,7 @@ services:
       - ./src:/var/www/
     depends_on:
       - php
+      - frontend
     networks:
       - app-network
 
@@ -53,6 +54,19 @@ services:
     ports:
       - "8025:8025"
       - "1025:1025"
+    networks:
+      - app-network
+
+  frontend:
+    image: node:16-alpine
+    working_dir: /usr/src/app
+    volumes:
+      - ./frontend:/usr/src/app
+    ports:
+      - "3000:3000"
+    command: ["sh", "-c", "npm install && npm start"]
+    depends_on:
+      - php
     networks:
       - app-network
 

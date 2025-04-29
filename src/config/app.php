@@ -53,8 +53,9 @@ return [
     */
 
     'url' => env('APP_URL', 'http://localhost'),
-
     'asset_url' => env('ASSET_URL', null),
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:3000'),
+    'api_url' => env('API_URL', 'http://localhost/api'),
 
     /*
     |--------------------------------------------------------------------------
@@ -160,7 +161,7 @@ return [
         Illuminate\Session\SessionServiceProvider::class,
         Illuminate\Translation\TranslationServiceProvider::class,
         Illuminate\Validation\ValidationServiceProvider::class,
-        Illuminate\View\ViewServiceProvider::class,
+        Illuminate\View\ViewServiceProvider::class,Laravel\Sanctum\SanctumServiceProvider::class,
 
         /*
          * Package Service Providers...

@@ -22,21 +22,38 @@ class LoginRequest extends FortifyLoginRequest
      *
      * @return array
      */
-    public function rules()
+    public function rules(): array
     {
-        return
-            [
-                'email' => ['required', 'string', 'email', 'exists:users,email'],
-                'password' => ['required', 'string', 'min:8'],
+        // verify-login-code のときは code も必須
+        if ($this->route()->getName() === 'api.verify-login-code') {
+            return [
+                'email'    => ['required','email'],
+                'password' => ['required','string','min:8'],
+                'code'     => ['required','digits:6'],
             ];
+        }
+
+        // request-login-code のときは email/password
+        if ($this->route()->getName() === 'api.request-login-code') {
+            return [
+                'email'    => ['required','email'],
+                'password' => ['required','string','min:8'],
+            ];
+        }
+
+        // フォールバック
+        return [
+            'email'    => ['required','email'],
+            'password' => ['required','string','min:8'],
+        ];
     }
+
 
     public function messages()
     {
         return [
             'email.required' => 'メールアドレスを入力してください',
             'email.email' => 'ユーザー名@ドメイン形式で入力してください',
-            'email.exists' => 'ログイン情報が登録されていません',
             'password.required' => 'パスワードを入力してください',
             'password.min' => 'パスワードは8文字以上で入力してください',
         ];
