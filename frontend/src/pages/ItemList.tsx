@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -9,45 +9,36 @@ interface Item {
   name: string;
   image_url: string;
   is_sold: boolean;
-  message_count?: number;
+  /** API で追加したプロパティ  */
+  isFavorite: boolean;
 }
-
 const ItemList: React.FC = () => {
-  const navigate = useNavigate();
-  const { search, pathname } = useLocation();
-  const params = new URLSearchParams(search);
-  const tab = params.get("tab") || "";
-
   const [items, setItems] = useState<Item[]>([]);
+  const [tab, setTab] = useState<"recommend" | "mylist">("recommend");
 
-  // 環境変数からベースURLを取得（.envに設定している場合）
-  const base = process.env.REACT_APP_API_BASE_URL!;
+  // .env で指定した API のベース URL
+  const base = process.env.REACT_APP_API_BASE_URL ?? "";
 
+  /** 一覧取得（初回だけ）  */
   useEffect(() => {
-    const fetchItems = async () => {
+    const fetch = async () => {
       try {
-        // proxyを使わない場合、baseを利用して正しいURLを構築
-        const url = `${base}/api/items${tab ? `?tab=${tab}` : ""}`;
-        console.log("📦 Fetching items from", url);
-        const res = await axios.get<Item[]>(url);
-        console.log("📦 API Items:", res.data);
+        const res = await axios.get<Item[]>(`${base}/api/items`, {
+          headers: { Accept: "application/json" },
+        });
         setItems(res.data);
-      } catch (err) {
-        console.error("❌ fetch error:", err);
+      } catch (e) {
+        console.error("❌ 商品一覧取得エラー:", e);
       }
     };
-    fetchItems();
-  }, [tab, base]);
+    fetch();
+  }, [base]);
 
-  // タブ切り替えハンドラ
-  const handleTab = (selectedTab: string) => {
-    const searchParams = new URLSearchParams();
-    if (selectedTab) searchParams.set("tab", selectedTab);
-    navigate(
-      `/${searchParams.toString() ? `?${searchParams.toString()}` : ""}`
-    );
-  };
-
+  /** タブに応じた表示アイテムをメモ化  */
+  const visibleItems = useMemo(() => {
+    if (tab === "mylist") return items.filter((i) => i.isFavorite);
+    return items;
+  }, [items, tab]);
   return (
     <>
       <div className="item-tab">
@@ -55,7 +46,7 @@ const ItemList: React.FC = () => {
           className={
             tab === "mylist" ? "item-tab__link" : "item-tab__link--active"
           }
-          onClick={() => handleTab("")}
+          onClick={() => setTab("recommend")}
         >
           おすすめ
         </button>
@@ -63,23 +54,18 @@ const ItemList: React.FC = () => {
           className={
             tab === "mylist" ? "item-tab__link--active" : "item-tab__link"
           }
-          onClick={() => handleTab("mylist")}
+          onClick={() => setTab("mylist")}
         >
           マイリスト
         </button>
       </div>
 
       <div className="item-list">
-        {items.map((item) => (
+        {visibleItems.map((item) => (
           <div key={item.id} className="item-card">
             <Link to={`/item/${item.id}`} className="item-card__link">
               {item.is_sold && (
                 <span className="item-card__text--sold">Sold</span>
-              )}
-              {item.message_count && item.message_count > 0 && (
-                <span className="item-card__unread-badge">
-                  {item.message_count}
-                </span>
               )}
               <img
                 className="item-card__image"

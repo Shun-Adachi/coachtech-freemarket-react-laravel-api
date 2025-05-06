@@ -12,8 +12,14 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+Route::get('/purchase/{item_id}', function () {
+    return response()->file(public_path('index.html'));
+});
 
-// ① 認証不要のページ（React のエントリポイントを返すだけにする）
+Route::get('/purchase/{item_id}/complete', function () {
+    return response()->file(public_path('index.html'));
+});
+
 Route::get('/{any}', function () {
     // ここでは React ビルド後の index.html を返す
     return view('spa');

@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\UserProfileController;
-use App\Http\Controllers\Api\ItemController as ApiItemController;
+use App\Http\Controllers\Api\ItemController;
 use App\Http\Controllers\Api\SellController;
 use App\Http\Controllers\Api\PurchaseController;
 use App\Http\Controllers\Api\TradeController;
@@ -10,47 +10,71 @@ use App\Http\Controllers\Api\TradeMessageController;
 use App\Http\Controllers\Api\TradeRatingController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\RegisterController;
+use App\Http\Controllers\Api\ShippingController;
+use App\Http\Controllers\Api\CheckoutController;
 
 // 認証前に必要なエンドポイント
-
 Route::post('/request-login-code', [AuthController::class, 'requestLoginCode']);
 Route::post('/verify-login-code', [AuthController::class, 'verifyLoginCode'])->name('api.verify-login-code');
 Route::post('/register', [RegisterController::class, 'register']);
 
 // 商品一覧／詳細
-Route::get('/items', [ApiItemController::class, 'index']);
-
-Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
+Route::get('/items', [ItemController::class, 'index']);
+Route::get('/item/{itemId}', [ItemController::class, 'show']);
+Route::get('/item/{itemId}/comments', [ItemController::class, 'comments']);
 
 // 認証が必要なグループ
 Route::middleware('auth:sanctum')->group(function () {
 
+    // ログアウト
+    Route::post('/logout', [AuthController::class, 'logout']);
+    // プロフィールページ
+    Route::patch('/mypage/profile', [UserProfileController::class, 'update']);
     Route::get('/mypage', [UserProfileController::class, 'index']);
-    // ユーザー情報
-    Route::get('/user', [UserProfileController::class, 'show']);
+    Route::get('/mypage/profile', [UserProfileController::class, 'show']);
 
-    // ユーザー情報更新 (multipart/form-data で thumbnail も OK)
-    Route::match(['put', 'patch'], '/user', [UserProfileController::class, 'update']);
+    // 商品詳細
+    Route::post('/item/{itemId}/favorite', [ItemController::class, 'favorite']);
+    Route::delete('/item/{itemId}/favorite', [ItemController::class, 'unfavorite']);
+    Route::post('/item/{itemId}/comments', [ItemController::class, 'addComment']);
 
-    // サムネイルのみ削除
-    Route::delete('/user/thumbnail', [UserProfileController::class, 'deleteThumbnail']);
+    // 購入詳細取得
+    Route::get('/purchase/{itemId}', [PurchaseController::class, 'show']);
 
-    // 商品一覧／詳細
-    // Route::get('/items', [ItemController::class, 'index']);
-    // Route::get('/items/{item}', [ItemController::class, 'show']);
+    // 配送先変更
+    Route::get('/purchase/address/{item_id}', [ShippingController::class, 'show'])
+        ->name('api.purchase.address.show');
+    Route::put('/purchase/address/{item_id}', [ShippingController::class, 'update'])
+        ->name('api.purchase.addrss.update');
 
     // 出品
-    Route::post('/items', [SellController::class, 'store']);
+    Route::get('/sell', [SellController::class, 'create'])
+        ->name('api.sell.create');
+    Route::post('/sell', [SellController::class, 'store'])
+        ->name('api.sell.store');
+
+    // Stripe Checkout セッション作成 API
+    Route::post('/purchase/{item_id}/checkout', [CheckoutController::class, 'createCheckoutSession'])
+        ->name('api.purchase.checkout');
 
     // 購入処理
-    Route::post('/purchase/checkout', [PurchaseController::class, 'createCheckoutSession']);
-    Route::get('/purchase/{item}', [PurchaseController::class, 'purchase']);
-    Route::patch('/purchase/address', [PurchaseController::class, 'update']);
+    Route::post('/purchase', [PurchaseController::class, 'store'])
+        ->name('api.purchase.store');
+
 
     // 取引・メッセージ・評価
     Route::post('/trades/{trade}/complete', [TradeController::class, 'complete']);
     Route::post('/trades/{trade}/rate', [TradeRatingController::class, 'store']);
 
-    Route::apiResource('trades.messages', TradeMessageController::class)
-         ->only(['index','store','update','destroy']);
+    // 取引チャット一覧取得
+    Route::get('/trades/{trade}/messages', [TradeMessageController::class, 'index'])->name('api.trades.messages.index');
+
+    // チャットメッセージ送信
+    Route::post('/trades/{trade}/messages', [TradeMessageController::class, 'store'])->name('api.trades.messages.store');
+
+    // チャットメッセージ更新
+    Route::put('/trades/{trade}/messages/{message}', [TradeMessageController::class, 'update'])->name('api.trades.messages.update');
+
+    // チャットメッセージ削除
+    Route::delete('/trades/{trade}/messages/{message}', [TradeMessageController::class, 'destroy'])->name('api.trades.messages.destroy');
 });

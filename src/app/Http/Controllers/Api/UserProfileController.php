@@ -4,134 +4,104 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Requests\UserRequest;
 use App\Models\Trade;
 use App\Models\Item;
 use App\Models\Purchase;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class UserProfileController extends Controller
 {
 
     /**
-     * マイページ用データを返す
-     * GET /api/user?tab={tab}
+     * ユーザープロフィール情報を返却
+     * - 出品中の商品
+     * - 購入済みの商品
+     * - 取引中の商品 (未完了且つ新着メッセージ順)
+     * - 未読メッセージ数合計
+     * - 評価平均値
      */
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
-        $user     = $request->user();
-        $userId   = $user->id;
-        $tab      = $request->query('tab');
+        $user = Auth::user();
 
-        //
-        // 1) 「評価未入力の取引」を集める
-        //
-        $trades = Trade::with(['purchase.item', 'tradeMessages'])
-            ->where(function($query) use ($userId) {
-                $query->where(function ($q) use ($userId) {
-                    $q->whereHas('purchase', fn($q2) =>
-                            $q2->where('user_id', $userId)
-                        )
-                      ->whereNull('buyer_rating_points');
-                })->orWhere(function ($q) use ($userId) {
-                    $q->whereHas('purchase.item', fn($q2) =>
-                            $q2->where('user_id', $userId)
-                        )
-                      ->whereNull('seller_rating_points');
-                });
-            })
-            ->get();
+        // 出品中（sellingItems）: 購入済みかどうかに関係なく、自身が出品したすべての商品を取得
+        $sellingItems = Item::where('user_id', $user->id)
+            ->get()
+            ->map(fn($i) => [
+                'id'            => $i->id,
+                'trade_id'      => null,
+                'name'          => $i->name,
+                'image_url'     => asset('storage/'.$i->image_path),
+                // 購入履歴が存在すれば is_sold = true
+                'is_sold'       => Purchase::where('item_id', $i->id)->exists(),
+                'message_count' => 0,
+            ]);
 
-        //
-        // 2) 各取引に最新メッセージ日時を付与
-        //
-        $trades->each(function ($trade) {
-            $latest = $trade->tradeMessages->max('created_at');
-            $trade->latest_trade_message_at = $latest ?? $trade->created_at;
-        });
+        // 購入済み（purchasedItems）：自身が購入した全商品を取得（メッセージ不要）
+        $purchasedItems = Purchase::where('user_id', $user->id)
+            ->with(['item', 'trade'])
+            ->get()
+            ->map(fn($p) => [
+                'id'            => $p->item->id,
+                'trade_id'      => $p->trade ? $p->trade->id : null,
+                'name'          => $p->item->name,
+                'image_url'     => asset('storage/'.$p->item->image_path),
+                'is_sold'       => true,
+                'message_count' => 0,
+            ]);
 
-        //
-        // 3) 商品ごとにグループ化 → アイテムコレクションを作成
-        //
-        $grouped = $trades->groupBy(fn($t) => $t->purchase->item->id);
-        $items = $grouped->map(function ($tradesForItem) use ($userId) {
-            $firstTrade = $tradesForItem->first();
-            $item       = $firstTrade->purchase->item;
-            $item->trade_id = $firstTrade->id;
+        // 取引中（tradingItems）：未完了かつ当事者、メッセージの最新日時でソート
+        $tradeBaseQuery = Trade::where('is_complete', false)
+            ->whereHas('purchase', fn($q) => $q->where('user_id', $user->id)
+                ->orWhereHas('item', fn($q2) => $q2->where('user_id', $user->id)));
 
-            // 相手のメッセージだけ抽出
-            $partnerMsgs = $tradesForItem
-                ->flatMap(fn($t) => $t->tradeMessages->where('user_id', '!=', $userId));
+        $tradingItems = $tradeBaseQuery
+            ->with(['purchase.item', 'tradeMessages'])
+            ->get()
+            ->sortByDesc(fn(Trade $t) => $t->tradeMessages->max('created_at'))
+            ->values()
+            ->map(fn($t) => [
+                'id'            => $t->purchase->item->id,
+                'trade_id'      => $t->id,
+                'name'          => $t->purchase->item->name,
+                'image_url'     => asset('storage/'.$t->purchase->item->image_path),
+                'is_sold'       => true,
+                'message_count' => $t->tradeMessages->where('is_read', false)->count(),
+            ]);
 
-            $item->latest_partner_message_at =
-                $partnerMsgs->max('created_at');
-            $item->message_count =
-                $partnerMsgs->where('is_read', false)->count();
+        // 未読メッセージ数合計
+        $totalUnread = $tradeBaseQuery
+            ->withCount(['tradeMessages as unread_count' => fn($q) => $q->where('is_read', false)])
+            ->get()
+            ->sum('unread_count');
 
-            return $item;
-        });
+        // 評価平均値と件数 (seller_rating_points が入っている取引のみ)
+        $ratingQuery = Trade::whereNotNull('seller_rating_points')
+            ->whereHas('purchase', fn($q) => $q->where('user_id', $user->id)
+                ->orWhereHas('item', fn($q2) => $q2->where('user_id', $user->id)));
+        $averageRating = $ratingQuery->avg('seller_rating_points') ?: 0;
+        $ratingCount   = $ratingQuery->count();
 
-        // 未読メッセージ合計
-        $totalTradePartnerMessages = $items->sum('message_count');
-
-        // 新着順にソート
-        $items = $items
-            ->sortByDesc(fn($i) =>
-                $i->latest_partner_message_at
-                    ? $i->latest_partner_message_at->timestamp
-                    : 0
-            )
-            ->values();
-
-        //
-        // 4) タブによる切替（sell / purchase / default）
-        //
-        if ($tab === 'sell') {
-            $items = Item::where('user_id', $userId)->get();
-        } elseif (! $tab) {
-            $purchaseItemIds = Purchase::where('user_id', $userId)
-                                      ->pluck('item_id');
-            $items = Item::whereIn('id', $purchaseItemIds)->get();
-        }
-
-        //
-        // 5) 自分に関わる全取引から平均評価を算出
-        //
-        $allTrades = Trade::with(['purchase.item'])
-            ->where(fn($q) => $q
-                ->whereHas('purchase', fn($q2) => $q2->where('user_id', $userId))
-                ->orWhereHas('purchase.item', fn($q2) => $q2->where('user_id', $userId))
-            )->get();
-
-        $totalRating = 0;
-        $ratingCount = 0;
-        foreach ($allTrades as $trade) {
-            // 購入者なら seller_rating_points
-            if ($trade->purchase->user_id === $userId && $trade->seller_rating_points !== null) {
-                $totalRating += $trade->seller_rating_points;
-                $ratingCount++;
-            }
-            // 出品者なら buyer_rating_points
-            if ($trade->purchase->item->user_id === $userId && $trade->buyer_rating_points !== null) {
-                $totalRating += $trade->buyer_rating_points;
-                $ratingCount++;
-            }
-        }
-        $averageTradeRating = $ratingCount > 0
-            ? round($totalRating / $ratingCount)
-            : 0;
-
-        //
-        // 6) JSON で返却
-        //
         return response()->json([
-            'user'                       => $user,
-            'items'                      => $items,
-            'totalTradePartnerMessages'  => $totalTradePartnerMessages,
-            'averageTradeRating'         => $averageTradeRating,
-            'ratingCount'                => $ratingCount,
-            'tab'                        => $tab,
-        ]);
+            'user' => [
+                'id'            => $user->id,
+                'name'          => $user->name,
+                'thumbnail_url' => $user->thumbnail_path,
+            ],
+            'sellingItems'              => $sellingItems,
+            'purchasedItems'            => $purchasedItems,
+            'tradingItems'              => $tradingItems,
+            'totalTradePartnerMessages' => $totalUnread,
+            'averageTradeRating'        => $averageRating,
+            'ratingCount'               => $ratingCount,
+        ], 200);
     }
 
     /**
@@ -140,12 +110,22 @@ class UserProfileController extends Controller
      */
     public function show(Request $request)
     {
-        return response()->json($request->user());
+    $user = auth()->user();
+
+    // ここで必要な項目だけ抜き出して JSON で返していると仮定
+    return response()->json([
+        'id'                  => $user->id,
+        'name'                => $user->name,
+        'thumbnail_url'       => $user->thumbnail_path ? asset('storage/'.$user->thumbnail_path) : null,
+        'current_post_code'   => $user->current_post_code,
+        'current_address'     => $user->current_address,
+        'current_building'    => $user->current_building,
+    ]);
     }
 
     /**
      * ユーザー情報（プロフィール）を更新
-     * PUT|PATCH  /api/user
+     * PATCH  /api/mypage/profile
      */
     public function update(UserRequest $request)
     {
@@ -153,36 +133,30 @@ class UserProfileController extends Controller
         $data = $request->validated();
 
         // サムネイル画像アップロードの処理
-        if ($request->hasFile('thumbnail')) {
-            // 旧ファイルがあれば削除
-            if ($user->thumbnail && Storage::disk('public')->exists($user->thumbnail)) {
-                Storage::disk('public')->delete($user->thumbnail);
+        if ($request->hasFile('image')) {
+            // default/users/以外の旧ファイルを削除
+            if (!Str::startsWith($user->thumbnail_path, 'default/users/'))
+            {
+                Storage::disk('public')->delete($user->thumbnail_path );
             }
             // 新しいファイルを保存（public/users ディレクトリ）
-            $path = $request->file('thumbnail')->store('users', 'public');
-            $data['thumbnail'] = $path;
+            $path = $request->file('image')->store('users', 'public');
+            $data['thumbnail_path'] = $path;
         }
 
-        $user->update($data);
+        unset($data['image']);
+        // バリデート済みデータで更新（thumbnail_path は上書き済み）
+        $user->fill($data);
+        $user->save();
 
-        return response()->json($user);
+        // フロントで使いやすいように URL を付与
+        $user->thumbnail_url = $user->thumbnail_path
+            ? Storage::url($user->thumbnail_path)
+            : null;
+
+        return response()->json([
+            'user' => $user
+        ], 200);
     }
 
-    /**
-     * サムネイル画像のみ削除
-     * DELETE  /api/user/thumbnail
-     */
-    public function deleteThumbnail(Request $request)
-    {
-        $user = $request->user();
-
-        if ($user->thumbnail && Storage::disk('public')->exists($user->thumbnail)) {
-            Storage::disk('public')->delete($user->thumbnail);
-            // DB 側もクリア
-            $user->thumbnail = null;
-            $user->save();
-        }
-
-        return response()->json(['message' => 'Thumbnail deleted.']);
-    }
 }

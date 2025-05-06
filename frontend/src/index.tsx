@@ -9,6 +9,18 @@ axios.defaults.baseURL =
   process.env.REACT_APP_API_BASE_URL || "http://localhost";
 axios.defaults.withCredentials = true; // サンクトムCookie運用なら必要
 
+// ---- ▼ 追加ここだけ ▼ ----
+axios.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401) {
+      localStorage.removeItem("authToken"); // 汚染トークンを除去
+      window.location.href = "/login"; // SPA でも完全遷移で確実に
+    }
+    return Promise.reject(err);
+  }
+);
+
 // localStorage に token が残っていれば、Authorization ヘッダを再設定
 const token = localStorage.getItem("authToken");
 if (token) {

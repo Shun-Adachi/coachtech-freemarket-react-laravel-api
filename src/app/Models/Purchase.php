@@ -26,7 +26,7 @@ class Purchase extends Model
     //PurchaseとTradeのリレーション
     public function trade()
     {
-        return $this->hasMany(Trade::class);
+        return $this->hasOne(Trade::class, 'purchase_id');
     }
 
     //PurchaseとItemのリレーション

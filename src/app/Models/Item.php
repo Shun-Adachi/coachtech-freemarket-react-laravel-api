@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Item extends Model
 {
@@ -33,6 +34,23 @@ class Item extends Model
     public function category()
     {
         return $this->belongsTo(Category::class);
+    }
+
+    /**
+     * この商品についた「お気に入り」一覧
+     */
+    public function favorites()
+    {
+        // items.id = favorites.item_id
+        return $this->hasMany(Favorite::class);
+    }
+
+    /**
+     * この商品に紐づく購入履歴
+     */
+    public function purchases(): HasMany
+    {
+        return $this->hasMany(\App\Models\Purchase::class);
     }
 
     //キーワード検索

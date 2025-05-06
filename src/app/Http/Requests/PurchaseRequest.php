@@ -24,19 +24,23 @@ class PurchaseRequest extends FormRequest
     public function rules()
     {
         return [
-            'payment_method' => 'required',
-            'shipping_post_code' => 'required | regex:/^\d{3}-\d{4}$/',
-            'shipping_address' => 'required',
+            'item_id'        => ['required', 'exists:items,id'],
+            'shipping_post_code'  => ['required', 'regex:/^\d{3}-\d{4}$/'],
+            'shipping_address'  => ['required', 'string', 'max:255'],
+            'shipping_building' => ['nullable', 'string', 'max:255'],
+            // 例: 支払方法 (1: コンビニ, 2: カード…)
+            'payment_method' => ['required', 'in:1,2'],
         ];
     }
 
     public function messages()
     {
         return [
-            'payment_method.required' => '支払い方法を選択してください',
-            'shipping_post_code.required' => '郵便番号を入力してください',
-            'shipping_post_code.regex' => '郵便番号は8文字(ハイフンあり)の形で入力してください',
-            'shipping_address.required' => '住所を入力してください',
+            'item_id.required'   => '商品が指定されていません',
+            'item_id.exists'     => '指定された商品が存在しません',
+            'shipping_post_code.*'    => '郵便番号は 123-4567 形式で入力してください',
+            'shipping_address.*'    => '住所を入力してください',
+            'payment_method.*'   => '支払方法を選択してください',
         ];
     }
 }

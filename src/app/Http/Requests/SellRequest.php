@@ -22,25 +22,17 @@ class SellRequest extends FormRequest
      * @return array
      */
     public function rules()
-    {
-        $rules = [
-            'name' => ['required', 'string'],
-            'description' => ['required', 'string', 'max:255'],
-            'categories' => ['required'],
-            'condition' => ['required'],
-            'price' => ['required', 'integer', 'min:50'],
-        ];
-
-        if (!$this->hasFile('image') && $this->temp_image) {
-            // 一時保存されている場合は必須チェックをスキップ
-            $rules['image'] = [];
-        } else {
-            // 通常のバリデーションルール
-            $rules['image'] = ['required', 'mimes:jpg,jpeg,png'];
-        }
-
-        return $rules;
-    }
+{
+    return [
+        'name'        => ['required', 'string'],
+        'description' => ['required', 'string', 'max:255'],
+        'categories'  => ['required', 'array'],
+        'categories.*'=> ['integer', 'exists:categories,id'],
+        'condition_id'   => ['required', 'integer', 'exists:conditions,id'],
+        'price'       => ['required', 'integer', 'min:50'],
+        'image'       => ['required', 'file', 'mimes:jpg,jpeg,png'],
+    ];
+}
 
     public function messages()
     {
@@ -51,16 +43,11 @@ class SellRequest extends FormRequest
             'description.required' => '商品説明を入力してください',
             'description.max' => '商品説明は255以下で入力してください',
             'categories.required' => 'カテゴリーを選択してください',
-            'condition.required' => '商品の状態を選択してください',
+            'condition_id.required' => '商品の状態を選択してください',
             'price.required' => '販売価格を入力してください',
             'price.integer' => '販売価格は整数を入力してください',
             'price.min' => '販売価格は50円以上で入力してください',
         ];
     }
 
-    protected function failedValidation(\Illuminate\Contracts\Validation\Validator $validator)
-    {
-        handleTempImageUpload($this, $validator);
-        parent::failedValidation($validator);
-    }
 }
