@@ -33,18 +33,4 @@ class TradeMessageUpdateRequest extends FormRequest
         ];
     }
 
-    /**
-     * バリデーション失敗時に、編集対象のメッセージIDをフラッシュする
-     */
-    protected function failedValidation(Validator $validator)
-    {
-        // ルートパラメータから編集対象のメッセージ（モデル）のIDを取得
-        $message = $this->route('message');
-        if ($message) {
-            session()->flash('editingMessageId', $message->id);
-        }
-        throw new HttpResponseException(
-            redirect()->back()->withInput()->withErrors($validator)
-        );
-    }
 }

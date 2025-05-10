@@ -62,19 +62,14 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('api.purchase.store');
 
 
-    // 取引・メッセージ・評価
+    // 取引チャット
+    Route::get('/trades/{trade}/messages', [TradeMessageController::class, 'index'])->name('api.trades.messages.index');
+    Route::post('/trades/{trade}/messages', [TradeMessageController::class, 'store'])->name('api.trades.messages.store');
+    Route::put('/trades/{trade}/messages/{message}', [TradeMessageController::class, 'update'])->name('api.trades.messages.update');
+    Route::delete('/trades/{trade}/messages/{message}', [TradeMessageController::class, 'destroy'])->name('api.trades.messages.destroy');
+
+    // 取引完了・評価
     Route::post('/trades/{trade}/complete', [TradeController::class, 'complete']);
     Route::post('/trades/{trade}/rate', [TradeRatingController::class, 'store']);
 
-    // 取引チャット一覧取得
-    Route::get('/trades/{trade}/messages', [TradeMessageController::class, 'index'])->name('api.trades.messages.index');
-
-    // チャットメッセージ送信
-    Route::post('/trades/{trade}/messages', [TradeMessageController::class, 'store'])->name('api.trades.messages.store');
-
-    // チャットメッセージ更新
-    Route::put('/trades/{trade}/messages/{message}', [TradeMessageController::class, 'update'])->name('api.trades.messages.update');
-
-    // チャットメッセージ削除
-    Route::delete('/trades/{trade}/messages/{message}', [TradeMessageController::class, 'destroy'])->name('api.trades.messages.destroy');
 });

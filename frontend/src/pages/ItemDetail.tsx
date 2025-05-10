@@ -59,6 +59,7 @@ const ItemDetail: React.FC = () => {
       try {
         const res = await axios.get<ItemDetailData>(`/api/item/${itemId}`, {
           headers: { Accept: "application/json" },
+          withCredentials: true,
         });
         setItem(res.data);
       } catch (err) {
@@ -101,6 +102,7 @@ const ItemDetail: React.FC = () => {
       if (item.isFavorite) {
         await axios.delete(`/api/item/${item.id}/favorite`, {
           headers: { Accept: "application/json" },
+          withCredentials: true,
         });
         setItem(
           (prev) =>
@@ -113,6 +115,7 @@ const ItemDetail: React.FC = () => {
       } else {
         await axios.post(`/api/item/${item.id}/favorite`, null, {
           headers: { Accept: "application/json" },
+          withCredentials: true,
         });
         setItem(
           (prev) =>

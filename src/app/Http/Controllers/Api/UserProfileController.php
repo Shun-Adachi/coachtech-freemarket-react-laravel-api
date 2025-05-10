@@ -73,21 +73,48 @@ class UserProfileController extends Controller
                 'name'          => $t->purchase->item->name,
                 'image_url'     => asset('storage/'.$t->purchase->item->image_path),
                 'is_sold'       => true,
-                'message_count' => $t->tradeMessages->where('is_read', false)->count(),
+                'message_count' => $t->tradeMessages
+                    ->where('is_read', false)
+                    ->where('user_id', '!=', $user->id)
+                    ->count(),
             ]);
 
         // 未読メッセージ数合計
         $totalUnread = $tradeBaseQuery
-            ->withCount(['tradeMessages as unread_count' => fn($q) => $q->where('is_read', false)])
+            ->withCount(['tradeMessages as unread_count' => fn($q) => $q
+                ->where('is_read', false)
+                ->where('user_id', '!=', $user->id)
+            ])
             ->get()
             ->sum('unread_count');
 
-        // 評価平均値と件数 (seller_rating_points が入っている取引のみ)
-        $ratingQuery = Trade::whereNotNull('seller_rating_points')
-            ->whereHas('purchase', fn($q) => $q->where('user_id', $user->id)
-                ->orWhereHas('item', fn($q2) => $q2->where('user_id', $user->id)));
-        $averageRating = $ratingQuery->avg('seller_rating_points') ?: 0;
-        $ratingCount   = $ratingQuery->count();
+        // 評価平均値と件数
+        // (1) 自分が【出品者】だった取引に対する buyer_rating_points を集計
+        $sellerQuery = Trade::whereHas('purchase.item', fn($q) =>
+                $q->where('user_id', $user->id)
+            )
+            ->whereNotNull('buyer_rating_points');
+
+        $sellerCount = $sellerQuery->count();
+        $sellerSum   = $sellerQuery->sum('buyer_rating_points');
+
+        // (2) 自分が【購入者】だった取引に対する seller_rating_points を集計
+        $buyerQuery = Trade::whereHas('purchase', fn($q) =>
+                $q->where('user_id', $user->id)
+            )
+            ->whereNotNull('seller_rating_points');
+
+        $buyerCount = $buyerQuery->count();
+        $buyerSum   = $buyerQuery->sum('seller_rating_points');
+
+        // (3) 合計件数と合計得点から平均を算出
+        $totalCount     = $sellerCount + $buyerCount;
+        $averageRating  = $totalCount > 0
+            ? ($sellerSum + $buyerSum) / $totalCount
+            : 0;
+
+        // ★レスポンスに返す評価件数は、上記合計件数をそのまま使う
+        $ratingCount    = $totalCount;
 
         return response()->json([
             'user' => [
@@ -99,7 +126,7 @@ class UserProfileController extends Controller
             'purchasedItems'            => $purchasedItems,
             'tradingItems'              => $tradingItems,
             'totalTradePartnerMessages' => $totalUnread,
-            'averageTradeRating'        => $averageRating,
+            'averageTradeRating'        => round($averageRating, 1),
             'ratingCount'               => $ratingCount,
         ], 200);
     }

@@ -21,18 +21,23 @@ axios.interceptors.response.use(
   }
 );
 
-// localStorage に token が残っていれば、Authorization ヘッダを再設定
-const token = localStorage.getItem("authToken");
-if (token) {
-  axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+async function bootstrap() {
+  // ① CSRF cookie を先に取得しておく
+  await axios.get("/sanctum/csrf-cookie");
+  // ② 保存済みトークンがあればヘッダにセット
+  const token = localStorage.getItem("authToken");
+  if (token) {
+    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  }
+
+  const container = document.getElementById("root");
+  if (!container) throw new Error("Root container not found");
+
+  const root = createRoot(container);
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
 }
-
-const container = document.getElementById("root");
-if (!container) throw new Error("Root container not found");
-
-const root = createRoot(container);
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+bootstrap();

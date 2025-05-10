@@ -47,12 +47,16 @@
 }
 
 .profile__group--rating {
+  font-family: "Arial Unicode MS", "Segoe UI Symbol", sans-serif;
   width: 100%;
   margin: 15px 0 15px 0;
   display: flex;
   justify-content: center;
   font-size: 36px;
-  gap: 20px;
+  line-height: 1;
+  letter-spacing: 0;
+  color: #ffd700;
+  gap: 5px;
 }
 
 .profile__rating {

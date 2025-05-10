@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
@@ -10,6 +9,7 @@ use App\Models\TradeMessage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class TradeMessageController extends Controller
 {
@@ -68,6 +68,10 @@ class TradeMessageController extends Controller
 
         // 5) サイドバー用：評価未入力の取引一覧
         $sidebarTrades = Trade::with(['purchase.item', 'tradeMessages'])
+            // purchase.item は必ず読み込みたい
+            ->with('purchase.item')
+            // tradeMessages.created_at の最大（最新）を trade_messages_max_created_at カラムとして取得
+            ->withMax('tradeMessages', 'created_at')
             ->where('id', '!=', $trade->id)
             ->where(function ($q) use ($userId) {
                 $q->where(function ($q2) use ($userId) {
@@ -82,6 +86,7 @@ class TradeMessageController extends Controller
                     )->whereNull('seller_rating_points');
                 });
             })
+            ->orderByDesc('trade_messages_max_created_at')
             ->get()
             ->map(fn($t) => [
                 'id'       => $t->id,
@@ -92,7 +97,11 @@ class TradeMessageController extends Controller
         $editingMessageId = session('editingMessageId');
 
         // 7) モーダル表示フラグ（取引未完了なら true）
-        $showModal = ! $trade->is_complete;
+        $ratingColumn = $purchase->user->id === $userId
+            ? 'buyer_rating_points'
+            : 'seller_rating_points';
+
+        $showModal = $trade->is_complete && is_null($trade->$ratingColumn);
 
         return response()->json([
             'sidebarTrades'   => $sidebarTrades,
@@ -127,6 +136,7 @@ class TradeMessageController extends Controller
      * POST /api/trades/{trade}/messages
      */
     public function store(TradeMessageRequest $request,Trade $trade): JsonResponse {
+
         $user = $request->user();
 
         // 画像があれば保存

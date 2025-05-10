@@ -3,62 +3,35 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Trade;
 use Illuminate\Http\Request;
 
 class TradeRatingController extends Controller
 {
     /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
+     * 取引評価登録 API
+     * POST /api/trades/{trade}/rate
      */
-    public function index()
+    public function store(Request $request, Trade $trade)
     {
-        //
-    }
+        // バリデーション
+        $request->validate([
+            'rating' => 'required|integer|min:1|max:5',
+        ]);
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
-    {
-        //
-    }
+        // 購入者か出品者か判定し、対応するポイント列にセット
+        $isBuyer = ($trade->purchase->user_id === $request->user()->id);
+        if ($isBuyer) {
+            $trade->buyer_rating_points = $request->rating;
+        } else {
+            $trade->seller_rating_points = $request->rating;
+        }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        //
-    }
+        $trade->save();
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
-    {
-        //
+        // JSON で成功メッセージを返却
+        return response()->json([
+            'message' => '取引評価を送信しました。'
+        ], 200);
     }
 }

@@ -5,34 +5,18 @@ import React, {
   useRef,
   FormEvent,
   ChangeEvent,
+  useLayoutEffect,
 } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTradeChat } from "../hooks/useTradeChat";
 import axios from "axios";
 import "../styles/trade-chat.css";
 import "../styles/rating-modal.css";
-
-interface SidebarTrade {
-  id: number;
-  itemName: string;
-}
 
 interface User {
   id: number;
   name: string;
   thumbnail_url: string | null;
-}
-
-interface Item {
-  id: number;
-  name: string;
-  price: string;
-  image_url: string;
-}
-
-interface TradeInfo {
-  id: number;
-  is_complete: boolean;
-  purchaseUserId: number;
 }
 
 interface Message {
@@ -44,24 +28,46 @@ interface Message {
   created_at: string;
 }
 
+function resizeTextarea(ta: HTMLTextAreaElement) {
+  ta.style.height = "auto";
+  const style = window.getComputedStyle(ta);
+  const padding =
+    parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+  const border =
+    parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
+  const h = ta.scrollHeight - padding - border;
+  ta.style.height = `${h}px`;
+}
+
 const TradeChatPage: React.FC = () => {
   const { tradeId } = useParams<{ tradeId: string }>();
-  const navigate = useNavigate();
+  const {
+    loading,
+    sidebarTrades,
+    tradeInfo,
+    item,
+    tradePartner,
+    messages,
+    currentUserId,
+    showRatingModal,
+    setMessages,
+    setTradeInfo,
+    setShowRatingModal,
+  } = useTradeChat(Number(tradeId));
 
-  // ステート
-  const [loading, setLoading] = useState(true);
-  const [sidebarTrades, setSidebarTrades] = useState<SidebarTrade[]>([]);
-  const [tradeInfo, setTradeInfo] = useState<TradeInfo | null>(null);
-  const [item, setItem] = useState<Item | null>(null);
-  const [tradePartner, setTradePartner] = useState<User | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
-
+  const [editingText, setEditingText] = useState<string>("");
   const [newMessage, setNewMessage] = useState("");
   const [newImage, setNewImage] = useState<File | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [completing, setCompleting] = useState(false);
+  const [rating, setRating] = useState(3);
+  const [submittingRating, setSubmittingRating] = useState(false);
+  const [sendErrors, setSendErrors] = useState<string[]>([]);
+  const [editErrors, setEditErrors] = useState<string[]>([]);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
   useEffect(() => {
     const ta = textareaRef.current;
     if (ta) {
@@ -72,48 +78,20 @@ const TradeChatPage: React.FC = () => {
     if (saved) setNewMessage(saved);
   }, []);
 
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
-  const [showRatingModal, setShowRatingModal] = useState(false);
-  const [rating, setRating] = useState(3);
+  useLayoutEffect(() => {
+    document
+      .querySelectorAll<HTMLTextAreaElement>(
+        ".message-container__message, .message-edit-form__textarea"
+      )
+      .forEach(resizeTextarea);
+  }, [messages, editingId, editingText]);
 
-  // マウント時にデータ取得
-  useEffect(() => {
-    const fetchAll = async () => {
-      try {
-        // 1) チャット画面用データ一式を取得
-        const { data } = await axios.get<{
-          sidebarTrades: SidebarTrade[];
-          trade: { id: number; is_complete: boolean; purchase_user_id: number };
-          item: Item;
-          tradePartner: User;
-          messages: Message[];
-          showModal: boolean;
-          currentUserId: number; // ← 追加
-        }>(`/api/trades/${tradeId}/messages`, {
-          withCredentials: true,
-        });
-
-        setSidebarTrades(data.sidebarTrades);
-        setTradeInfo({
-          id: data.trade.id,
-          is_complete: data.trade.is_complete,
-          purchaseUserId: data.trade.purchase_user_id,
-        });
-        setItem(data.item);
-        setTradePartner(data.tradePartner);
-        setMessages(data.messages);
-        setShowRatingModal(data.trade.is_complete && data.showModal);
-
-        // 2) フロントではここから currentUserId をセット
-        setCurrentUserId(data.currentUserId);
-      } catch (err) {
-        console.error("チャット画面取得エラー:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchAll();
-  }, [tradeId]);
+  // 編集開始
+  const handleStartEdit = (msg: Message) => {
+    setEditErrors([]);
+    setEditingId(msg.id);
+    setEditingText(msg.message);
+  };
 
   if (loading) return <p>読み込み中…</p>;
 
@@ -121,26 +99,52 @@ const TradeChatPage: React.FC = () => {
     return <p>チャットデータを取得できませんでした。</p>;
   }
 
-  const isSeller = tradeInfo.purchaseUserId !== currentUserId;
   const canComplete =
     !tradeInfo.is_complete && currentUserId === tradeInfo.purchaseUserId;
 
   // 取引完了ボタンハンドラ
   const handleComplete = async () => {
+    if (completing) return;
+    setCompleting(true);
     try {
-      await axios.post(`/api/trades/${tradeInfo.id}/complete`, null, {
+      await axios.post(`/api/trades/${tradeInfo!.id}/complete`, null, {
         withCredentials: true,
       });
       setTradeInfo((t) => t && { ...t, is_complete: true });
       setShowRatingModal(true);
     } catch (err: any) {
       alert(err.response?.data?.message || "取引完了に失敗しました");
+    } finally {
+      setCompleting(false);
+    }
+  };
+
+  // 評価送信ハンドラ
+  const handleRatingSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (submittingRating) return;
+    setSubmittingRating(true);
+    try {
+      await axios.post(
+        `/api/trades/${tradeInfo!.id}/rate`,
+        { rating },
+        { withCredentials: true }
+      );
+      // 成功したらモーダルを閉じる
+      setShowRatingModal(false);
+    } catch (err: any) {
+      console.error("評価送信エラー:", err);
+      alert(err.response?.data?.message || "評価送信に失敗しました");
+    } finally {
+      setSubmittingRating(false);
     }
   };
 
   // メッセージ送信ハンドラ
   const handleSend = async (e: FormEvent) => {
     e.preventDefault();
+    // 送信前に前回のエラーをクリア
+    setSendErrors([]);
     if (!newMessage.trim() && !newImage) return;
 
     const form = new FormData();
@@ -153,16 +157,29 @@ const TradeChatPage: React.FC = () => {
         form,
         {
           withCredentials: true,
-          headers: { "Content-Type": "multipart/form-data" },
         }
       );
       setMessages((ms) => [...ms, res.data.message]);
       setNewMessage("");
       setNewImage(null);
       localStorage.removeItem("tradeMessageDraft");
+      setTimeout(() => {
+        document
+          .querySelectorAll<HTMLTextAreaElement>(".message-container__message")
+          .forEach(resizeTextarea);
+      }, 0);
     } catch (err: any) {
-      console.error("メッセージ送信エラー:", err);
-      alert(err.response?.data?.message || "送信に失敗しました");
+      if (err.response?.status === 422 && err.response.data.errors) {
+        // バックエンドのバリデーションメッセージを配列化してセット
+        const errs = err.response.data.errors;
+        const msgs = [...(errs.message ?? []), ...(errs.image ?? [])].map(
+          (m: any) => String(m)
+        );
+        setSendErrors(msgs);
+      } else {
+        console.error("メッセージ送信エラー:", err);
+        alert(err.response?.data?.message || "送信に失敗しました");
+      }
     }
   };
 
@@ -173,8 +190,77 @@ const TradeChatPage: React.FC = () => {
 
   // 自動リサイズ＋ローカルストレージ
   const handleMessageChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
-    setNewMessage(e.target.value);
-    localStorage.setItem("tradeMessageDraft", e.target.value);
+    const ta = e.currentTarget;
+    // ① scrollHeight に合わせて高さをリセット→セット
+    ta.style.height = "auto"; // ❷ スタイル取得
+    const style = window.getComputedStyle(ta);
+    const padding =
+      parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+    const border =
+      parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
+
+    // ❸ scrollHeight から padding + border を引いて、本来必要な高さを算出
+    const contentHeight = ta.scrollHeight;
+
+    // ❹ 最終的にセット
+    ta.style.height = `${contentHeight}px`;
+    // ② state にも反映
+    setNewMessage(ta.value);
+    localStorage.setItem("tradeMessageDraft", ta.value);
+  };
+
+  // 編集キャンセル
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditingText("");
+  };
+
+  // 編集確定（PATCH）
+  const handleSubmitEdit = async (e: FormEvent) => {
+    e.preventDefault();
+    // 前回の編集エラーをクリア
+    setEditErrors([]);
+    if (editingId == null) return;
+    try {
+      await axios.put(
+        `/api/trades/${tradeInfo!.id}/messages/${editingId}`,
+        { updateMessage: editingText },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json", // ← 追加
+            "X-Requested-With": "XMLHttpRequest",
+          },
+          withCredentials: true,
+        }
+      );
+      setMessages((ms) =>
+        ms.map((m) => (m.id === editingId ? { ...m, message: editingText } : m))
+      );
+      handleCancelEdit();
+    } catch (err: any) {
+      if (err.response?.status === 422 && err.response.data.errors) {
+        const errs = err.response.data.errors;
+        const msgs = (errs.updateMessage ?? []).map((m: any) => String(m));
+        setEditErrors(msgs);
+      } else {
+        alert(err.response?.data?.message || "更新に失敗しました");
+        handleCancelEdit();
+      }
+    }
+  };
+
+  // 削除（DELETE）
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("本当に削除しますか？")) return;
+    try {
+      await axios.delete(`/api/trades/${tradeInfo!.id}/messages/${id}`, {
+        withCredentials: true,
+      });
+      setMessages((ms) => ms.filter((m) => m.id !== id));
+    } catch (err: any) {
+      alert(err.response?.data?.message || "削除に失敗しました");
+    }
   };
 
   return (
@@ -263,24 +349,83 @@ const TradeChatPage: React.FC = () => {
                         alt="ユーザー画像"
                       />
                     </div>
-                    <div className="message-body--mine">
-                      <textarea
-                        className="message-container__message"
-                        rows={1}
-                        readOnly
-                        value={msg.message}
-                      />
-                      {msg.image_url && (
-                        <img
-                          className="message-container__image--mine"
-                          src={msg.image_url}
-                          alt="添付画像"
+                    {/* 編集モード */}
+                    {editingId === msg.id ? (
+                      <form
+                        className="message-edit-form"
+                        onSubmit={handleSubmitEdit}
+                      >
+                        {editErrors.length > 0 && (
+                          <ul className="message-form__errors--ul">
+                            {editErrors.map((e, i) => (
+                              <li key={i} className="message-form__errors--li">
+                                {e}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        <div className="message-edit-form__controls">
+                          <textarea
+                            className="message-edit-form__textarea"
+                            rows={1}
+                            value={editingText}
+                            onChange={(e) => setEditingText(e.target.value)}
+                          />
+                          <button
+                            type="submit"
+                            className="message-edit-form__submit"
+                          >
+                            <img
+                              className="message-edit-form__submit--image"
+                              src="/images/input-message.png"
+                              alt="送信"
+                            />
+                          </button>
+                          <button
+                            type="button"
+                            className="message-actions__button"
+                            onClick={handleCancelEdit}
+                          >
+                            キャンセル
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      /* 通常表示 */
+                      <div className="message-body--mine">
+                        <textarea
+                          className="message-container__message"
+                          rows={1}
+                          readOnly
+                          value={msg.message}
                         />
-                      )}
-                    </div>
-                    {!tradeInfo.is_complete && (
+                        {msg.image_url && (
+                          <img
+                            className="message-container__image--mine"
+                            src={msg.image_url}
+                            alt="添付画像"
+                          />
+                        )}
+                      </div>
+                    )}
+
+                    {/* 編集・削除ボタン */}
+                    {!tradeInfo!.is_complete && editingId !== msg.id && (
                       <div className="message-actions">
-                        {/* 編集・削除ボタンの実装は省略 */}
+                        <button
+                          type="button"
+                          className="message-actions__button"
+                          onClick={() => handleStartEdit(msg)}
+                        >
+                          編集
+                        </button>
+                        <button
+                          type="button"
+                          className="message-actions__button"
+                          onClick={() => handleDelete(msg.id)}
+                        >
+                          削除
+                        </button>
                       </div>
                     )}
                   </>
@@ -328,9 +473,18 @@ const TradeChatPage: React.FC = () => {
               {newImage?.name || ""}
             </span>
           </div>
+          {/* バリデーションエラー表示 */}
+          {sendErrors.length > 0 && (
+            <ul className="message-form__errors--ul">
+              {sendErrors.map((e, i) => (
+                <li key={i} className="message-form__errors--li">
+                  {e}
+                </li>
+              ))}
+            </ul>
+          )}
           <div className="message-form__controls">
             <textarea
-              ref={textareaRef}
               className="message-form__message"
               placeholder="取引メッセージを記入してください"
               value={newMessage}
@@ -375,13 +529,7 @@ const TradeChatPage: React.FC = () => {
               <p className="modal-content__message">
                 今回の取引相手はどうでしたか？
               </p>
-              <form
-                className="modal-form"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  // POST /api/trades/{tradeId}/rate を呼び出す実装を入れてください
-                }}
-              >
+              <form className="modal-form" onSubmit={handleRatingSubmit}>
                 <div className="star-rating">
                   {[5, 4, 3, 2, 1].map((v) => (
                     <React.Fragment key={v}>
@@ -397,8 +545,12 @@ const TradeChatPage: React.FC = () => {
                     </React.Fragment>
                   ))}
                 </div>
-                <button type="submit" className="modal-submit-button">
-                  送信する
+                <button
+                  type="submit"
+                  className="modal-submit-button"
+                  disabled={submittingRating}
+                >
+                  {submittingRating ? "送信中…" : "送信する"}
                 </button>
               </form>
             </div>

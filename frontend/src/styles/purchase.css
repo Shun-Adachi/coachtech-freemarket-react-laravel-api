@@ -1,17 +1,19 @@
 .purchase-content {
+  width: 100%;
 }
 
 .purchase-form {
   display: flex;
   justify-content: space-between;
+  box-sizing: border-box;
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 60px 40px;
+  padding: 60px 2%;
 }
 
 .purchase-information {
-  width: 70%;
+  width: 60%;
 }
 
 .purchase-item-information {

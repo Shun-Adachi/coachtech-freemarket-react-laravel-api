@@ -124,9 +124,11 @@ const ProfilePage: React.FC = () => {
         >
           取引中の商品
         </button>
-        <span className="item-tab__message-count">
-          {data.totalTradePartnerMessages}
-        </span>
+        {data.totalTradePartnerMessages > 0 && (
+          <span className="item-tab__message-count">
+            {data.totalTradePartnerMessages}
+          </span>
+        )}
       </div>
 
       {/* 商品一覧 */}

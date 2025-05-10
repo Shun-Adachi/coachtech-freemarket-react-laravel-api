@@ -28,15 +28,22 @@ class ItemController extends BaseController
 
         if ($token = $request->bearerToken()) {
             $pat = PersonalAccessToken::findToken($token);
-            // tokenable は User モデル
             if ($pat && $pat->tokenable_type === User::class) {
                 $loginId = $pat->tokenable_id;
             }
         }
 
+        // ─── 検索キーワード取得 ───
+        $keyword = $request->input('keyword');
+
         // ── 1) すべての公開アイテムを取得 ────────────────
         //    必要な関連だけ preload しておく
         $items = Item::query()
+            ->when($loginId, fn($q) => $q->where('user_id', '!=', $loginId))
+            // キーワードが空でなければ name LIKE 検索を追加
+            ->when($keyword, fn($q) =>
+                $q->where('name', 'like', "%{$keyword}%")
+            )
             ->with(['favorites' => function ($q) use ($loginId) {
                 // ログイン中ユーザがお気に入り済みか判定するための関連
                 if ($loginId) {
@@ -67,16 +74,20 @@ class ItemController extends BaseController
     public function show(Request $request, $itemId)
     {
         // ユーザー情報取得
-        $user = $request->user();
-        $userId = $user->id ?? null;
-
+        $loginId = null;
+        if ($token = $request->bearerToken()) {
+            $pat = PersonalAccessToken::findToken($token);
+            if ($pat && $pat->tokenable_type === User::class) {
+                $loginId = $pat->tokenable_id;
+            }
+        }
         // 商品詳細取得
         $item = Item::with(['user', 'condition'])->where('id', $itemId)->first();
         $purchase =  Purchase::where('item_id', $itemId)->exists();
 
         // お気に入り情報取得
-        if ($userId) {
-            $isFavorite = Favorite::where('item_id', $itemId)->where('user_id', $userId)->exists();
+        if ($loginId) {
+            $isFavorite = Favorite::where('item_id', $itemId)->where('user_id', $loginId)->exists();
         } else {
             $isFavorite = false;
         }

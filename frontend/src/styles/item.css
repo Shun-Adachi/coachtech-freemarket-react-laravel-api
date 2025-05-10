@@ -1,8 +1,9 @@
 .item-content {
   width: 100%;
   max-width: 1300px;
+  box-sizing: border-box;
   margin: 0 auto;
-  padding-bottom: 200px;
+  padding: 60px 2% 100px 2%;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -38,22 +39,6 @@
   display: flex;
 }
 
-.item-icon__link--active {
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-}
-
-.item-icon__link--inactive {
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  cursor: default;
-  pointer-events: none;
-}
-
 .item-icon__group {
   margin: 0px 20px;
 }
@@ -70,6 +55,7 @@
 
 .item-form__link--active {
   display: block;
+  box-sizing: border-box;
   width: 100%;
   height: 40px;
   margin: 15px auto 0px auto;
@@ -81,6 +67,7 @@
   font-size: large;
   text-align: center;
   text-decoration: none;
+  cursor: pointer;
 }
 
 .item-form__link--inactive {
@@ -190,8 +177,11 @@
 }
 
 .item-form__textarea {
-  width: 100%;
+  display: block;
+  block-size: border-box;
+  width: 95%;
   height: 150px;
+  margin: 0;
   padding: 10px;
   border-radius: 5px;
   font-size: large;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import axios from "axios";
 
 import "../styles/common/item-list.css";
@@ -9,14 +9,14 @@ interface Item {
   name: string;
   image_url: string;
   is_sold: boolean;
-  /** API で追加したプロパティ  */
   isFavorite: boolean;
 }
 const ItemList: React.FC = () => {
   const [items, setItems] = useState<Item[]>([]);
   const [tab, setTab] = useState<"recommend" | "mylist">("recommend");
-
-  // .env で指定した API のベース URL
+  const { search } = useLocation();
+  const params = new URLSearchParams(search);
+  const keyword = params.get("keyword") || ""; // ← ヘッダーから受け取る検索語
   const base = process.env.REACT_APP_API_BASE_URL ?? "";
 
   /** 一覧取得（初回だけ）  */
@@ -25,14 +25,13 @@ const ItemList: React.FC = () => {
       try {
         const res = await axios.get<Item[]>(`${base}/api/items`, {
           headers: { Accept: "application/json" },
+          params: keyword ? { keyword } : {}, // ← qパラメータを付与
         });
         setItems(res.data);
-      } catch (e) {
-        console.error("❌ 商品一覧取得エラー:", e);
-      }
+      } catch (e) {}
     };
     fetch();
-  }, [base]);
+  }, [base, keyword]);
 
   /** タブに応じた表示アイテムをメモ化  */
   const visibleItems = useMemo(() => {

@@ -1,64 +1,43 @@
 <?php
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Trade;
+use App\Mail\TradeCompletedMail;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+
 
 class TradeController extends Controller
 {
     /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
+     * 取引完了 API
+     * POST /api/trades/{trade}/complete
      */
-    public function index()
+    public function complete(Trade $trade, Request $request): JsonResponse
     {
-        //
-    }
+        $user = $request->user();
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
-    {
-        //
-    }
+        // 購入者のみが「取引完了」を呼び出せる
+        if ($trade->purchase->user->id !== $user->id) {
+            return response()->json([
+                'message' => 'この取引を完了する権限がありません。'
+            ], 403);
+        }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        //
-    }
+        // 完了フラグを立てる
+        $trade->is_complete = true;
+        $trade->save();
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
+        // 取引相手へ完了メールを送信
+        $tradePartner = $trade->purchase->item->user;
+        Mail::to($tradePartner->email)
+            ->send(new TradeCompletedMail($trade));
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
-    {
-        //
+        // JSON レスポンスで返す
+        return response()->json([
+            'message' => '取引が完了しました。'
+        ], 200);
     }
 }
