@@ -204,7 +204,7 @@ const SellPage: React.FC = () => {
           <label className="sell-form__label" htmlFor="condition">
             商品の状態
           </label>
-          <p className="sell-form__error-message">{errors.condition?.[0]}</p>
+          <p className="sell-form__error-message">{errors.condition_id?.[0]}</p>
           <select
             className="sell-form__select"
             name="condition"
