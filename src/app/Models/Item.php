@@ -52,12 +52,4 @@ class Item extends Model
     {
         return $this->hasMany(\App\Models\Purchase::class);
     }
-
-    //キーワード検索
-    public function scopeKeywordSearch($query, $keyword)
-    {
-        if (!empty($keyword)) {
-            $query->where('name', 'like', '%' . $keyword . '%');
-        }
-    }
 }

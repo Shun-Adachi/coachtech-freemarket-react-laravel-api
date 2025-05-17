@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 use App\Http\Controllers\Api\UserProfileController;
 use App\Http\Controllers\Api\ItemController;
 use App\Http\Controllers\Api\SellController;
@@ -26,8 +27,14 @@ Route::get('/item/{itemId}/comments', [ItemController::class, 'comments']);
 // 認証が必要なグループ
 Route::middleware('auth:sanctum')->group(function () {
 
+    // ユーザー取得
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
+
     // ログアウト
     Route::post('/logout', [AuthController::class, 'logout']);
+
     // プロフィールページ
     Route::patch('/mypage/profile', [UserProfileController::class, 'update']);
     Route::get('/mypage', [UserProfileController::class, 'index']);
@@ -47,12 +54,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/purchase/address/{item_id}', [ShippingController::class, 'update'])
         ->name('api.purchase.addrss.update');
 
-    // 出品
-    Route::get('/sell', [SellController::class, 'create'])
-        ->name('api.sell.create');
-    Route::post('/sell', [SellController::class, 'store'])
-        ->name('api.sell.store');
-
     // Stripe Checkout セッション作成 API
     Route::post('/purchase/{item_id}/checkout', [CheckoutController::class, 'createCheckoutSession'])
         ->name('api.purchase.checkout');
@@ -61,6 +62,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/purchase', [PurchaseController::class, 'store'])
         ->name('api.purchase.store');
 
+    // 出品
+    Route::get('/sell', [SellController::class, 'create'])
+        ->name('api.sell.create');
+    Route::post('/sell', [SellController::class, 'store'])
+        ->name('api.sell.store');
 
     // 取引チャット
     Route::get('/trades/{trade}/messages', [TradeMessageController::class, 'index'])->name('api.trades.messages.index');
@@ -71,5 +77,4 @@ Route::middleware('auth:sanctum')->group(function () {
     // 取引完了・評価
     Route::post('/trades/{trade}/complete', [TradeController::class, 'complete']);
     Route::post('/trades/{trade}/rate', [TradeRatingController::class, 'store']);
-
 });

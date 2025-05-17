@@ -3,7 +3,6 @@ import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 
 import "../styles/common/user-form.css";
-// register.css is empty, ignore
 
 interface Errors {
   name?: string;

@@ -63,7 +63,7 @@ class PurchaseController extends Controller
 
     public function show(Request $request, int $item_id): Response
     {
-        $user = $request->user();
+        $user = $request->user()->fresh();
         $item = Item::with('user')->findOrFail($item_id);
 
         // ─── 出品者は購入画面を見れない ───────────────────

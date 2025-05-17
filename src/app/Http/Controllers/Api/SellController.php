@@ -75,7 +75,7 @@ class SellController extends Controller
                 'image_url'    => asset('storage/' . $item->image_path),
                 'price'        => (int)$item->price,
                 'condition_id' => $item->condition_id,
-                'category_ids' => $request->input('category_ids', []),
+                'category_ids' => $request->input('categories', []),
             ],
         ], 201);
     }

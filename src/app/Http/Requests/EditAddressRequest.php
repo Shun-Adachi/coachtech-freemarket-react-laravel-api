@@ -6,17 +6,15 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class EditAddressRequest extends FormRequest
 {
-   public function rules()
+    public function rules()
     {
         return [
-            'shipping_post_code'  => ['required','regex:/^\d{3}-\d{4}$/'],
-            'shipping_address'    => ['required','string','max:255'],
-            'shipping_building'   => ['nullable','string','max:255'],
+            'shipping_post_code'  => ['required', 'regex:/^\d{3}-\d{4}$/'],
+            'shipping_address'    => ['required', 'string', 'max:255'],
+            'shipping_building'   => ['nullable', 'string', 'max:255'],
         ];
     }
-    /**
-     * カスタムメッセージ
-     */
+
     public function messages()
     {
         return [

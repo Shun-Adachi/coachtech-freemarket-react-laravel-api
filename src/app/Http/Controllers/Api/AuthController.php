@@ -12,24 +12,30 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\LoginCodeMail;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends BaseController
 {
     /**
      * API ログアウト：現在のアクセストークンを削除
      */
-    public function logout(request $request)
-    {
+    public function logout(Request $request)
+    { // ユーザー取得
+        $user = $request->user();
+        Log::info('→ bearerToken', ['token' => $request->bearerToken()]);
+        Log::info('→ user()',       ['user'  => optional($request->user())->id]);
+        // currentAccessToken() が null でも optional で吸収できるようにネストして呼び出し
+        Log::info('→ currentAccessToken()', [
+            'token' => optional(optional($user)->currentAccessToken())->id,
+        ]);
         $request->user()->currentAccessToken()->delete();
 
         return response()->json(['message' => 'ログアウトしました。'], 200);
     }
 
-    // 1. メールに認証コードを送信
-
+    // メールに認証コードを送信
     public function requestLoginCode(LoginRequest $request): JsonResponse
     {
-
         // バリデーション済みデータ取得
         $data = $request->validated();
         $email = $data['email'];

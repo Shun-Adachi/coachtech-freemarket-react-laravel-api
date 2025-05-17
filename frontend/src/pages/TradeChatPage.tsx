@@ -7,7 +7,7 @@ import React, {
   ChangeEvent,
   useLayoutEffect,
 } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useTradeChat } from "../hooks/useTradeChat";
 import axios from "axios";
 import "../styles/trade-chat.css";

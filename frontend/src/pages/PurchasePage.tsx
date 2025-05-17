@@ -27,18 +27,6 @@ type BeforeRes = {
   shippingDefaults: ShippingDefaults;
 };
 
-type Purchase = {
-  id: number;
-  status: string;
-  payment: string;
-  shipping: {
-    shipping_post_code: string;
-    shipping_address: string;
-    shipping_building: string;
-  };
-  item: Item & { price: string };
-};
-
 type ApiRes = BeforeRes;
 
 const PurchasePage: React.FC = () => {

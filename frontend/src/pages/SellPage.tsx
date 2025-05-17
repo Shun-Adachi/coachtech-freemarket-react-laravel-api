@@ -31,7 +31,6 @@ const SellPage: React.FC = () => {
   const [errors, setErrors] = useState<ValidationErrors>({});
 
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | undefined>(undefined);
 
   const [form, setForm] = useState({

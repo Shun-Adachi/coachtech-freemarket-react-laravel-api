@@ -23,7 +23,7 @@ class UserController extends Controller
 
         // 取引が自分に関係しているもので評価を入力していないものを表示
         $trades = Trade::with(['purchase.item', 'tradeMessages'])
-            ->where(function($query) use ($userId) {
+            ->where(function ($query) use ($userId) {
                 $query->where(function ($q) use ($userId) {
                     // 自分が購入者の場合、buyer_rating_pointsがnull
                     $q->whereHas('purchase', function ($q2) use ($userId) {
@@ -79,7 +79,7 @@ class UserController extends Controller
             $items = Item::where('user_id', $userId)->get();
         }
         // 購入した商品の場合、商品リストを更新
-        else if(!$tab){
+        else if (!$tab) {
             $purchaseItemIds = Purchase::where('user_id', $userId)->pluck('item_id');
             $items = Item::whereIn('id', $purchaseItemIds)->get();
         }
@@ -114,7 +114,7 @@ class UserController extends Controller
         // 平均値処理
         $averageTradeRating = $ratingCount > 0 ? round($totalRating / $ratingCount) : 0;
 
-        return view('mypage', compact('user', 'items', 'totalTradePartnerMessages', 'averageTradeRating','ratingCount', 'tab'));
+        return view('mypage', compact('user', 'items', 'totalTradePartnerMessages', 'averageTradeRating', 'ratingCount', 'tab'));
     }
 
     // プロフィール編集ページ表示
@@ -129,7 +129,6 @@ class UserController extends Controller
     public function update(UserRequest $request)
     {
         $user = auth()->user();
-        $tempImage = $request->temp_image;
 
         // 更新前データ
         $currentUserData  = [
@@ -146,13 +145,6 @@ class UserController extends Controller
             $this->deleteThumbnail($user->thumbnail_path);
             // ファイルを保存し、パスを取得
             $thumbnailPath = $request->file('image')->store('images/users/', 'public');
-        }
-        // 画像選択なし、一時ファイルあり
-        elseif ($tempImage) {
-            // 古い画像を削除
-            $this->deleteThumbnail($user->thumbnail_path);
-            // 一時ファイルを移動し、パスを取得
-            $thumbnailPath = moveTempImageToPermanentLocation($tempImage, 'images/users/');
         }
         // 画像選択なし、一時ファイルなし
         else {

@@ -53,6 +53,22 @@
   text-align: center;
 }
 
+.item-icon__link--active {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.item-icon__link--inactive {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  cursor: default;
+  pointer-events: none;
+}
+
 .item-form__link--active {
   display: block;
   box-sizing: border-box;

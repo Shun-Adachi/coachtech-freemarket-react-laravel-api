@@ -23,7 +23,6 @@ class TradeMessageRequest extends FormRequest
     {
         return [
             'message' => 'required|string|max:400',
-            // いったん中身の MIME もチェック（image は中身で画像かどうか）して…
             'image'   => 'nullable|file|image|mimes:jpeg,png',
         ];
     }

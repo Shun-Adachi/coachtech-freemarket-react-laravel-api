@@ -28,7 +28,6 @@ class UserRequest extends FormRequest
             'current_post_code' => ['required', 'regex:/^\d{3}-\d{4}$/'],
             'current_address'   => ['required', 'string', 'max:255'],
             'current_building'  => ['nullable', 'string', 'max:255'],
-            // ここで一度だけチェック。React 側は常に permanent upload なので temp_image は不要
             'image'             => ['nullable', 'mimes:jpg,jpeg,png'],
         ];
     }
@@ -42,5 +41,4 @@ class UserRequest extends FormRequest
             'current_address.required' => '住所を入力してください',
         ];
     }
-
 }

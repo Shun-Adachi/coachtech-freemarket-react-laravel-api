@@ -38,6 +38,7 @@ const ItemList: React.FC = () => {
     if (tab === "mylist") return items.filter((i) => i.isFavorite);
     return items;
   }, [items, tab]);
+
   return (
     <>
       <div className="item-tab">

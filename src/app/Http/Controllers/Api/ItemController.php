@@ -13,7 +13,6 @@ use App\Models\User;
 use App\Http\Requests\CommentRequest;
 use Symfony\Component\HttpFoundation\Response;
 use Laravel\Sanctum\PersonalAccessToken;
-use Illuminate\Support\Facades\Log;
 
 class ItemController extends BaseController
 {
@@ -24,7 +23,7 @@ class ItemController extends BaseController
     public function index(Request $request)
     {
         // ─── ① 任意認証（Bearer トークンがあればユーザ解決） ───
-        $loginId = null;
+        $loginId = optional($request->user())->id;
 
         if ($token = $request->bearerToken()) {
             $pat = PersonalAccessToken::findToken($token);

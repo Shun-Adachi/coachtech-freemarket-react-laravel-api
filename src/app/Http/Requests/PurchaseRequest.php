@@ -28,7 +28,6 @@ class PurchaseRequest extends FormRequest
             'shipping_post_code'  => ['required', 'regex:/^\d{3}-\d{4}$/'],
             'shipping_address'  => ['required', 'string', 'max:255'],
             'shipping_building' => ['nullable', 'string', 'max:255'],
-            // 例: 支払方法 (1: コンビニ, 2: カード…)
             'payment_method' => ['required', 'in:1,2'],
         ];
     }

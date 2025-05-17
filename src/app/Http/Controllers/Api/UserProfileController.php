@@ -4,17 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Requests\UserRequest;
 use App\Models\Trade;
 use App\Models\Item;
 use App\Models\Purchase;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Log;
 
 class UserProfileController extends Controller
 {
@@ -38,7 +35,7 @@ class UserProfileController extends Controller
                 'id'            => $i->id,
                 'trade_id'      => null,
                 'name'          => $i->name,
-                'image_url'     => asset('storage/'.$i->image_path),
+                'image_url'     => asset('storage/' . $i->image_path),
                 // 購入履歴が存在すれば is_sold = true
                 'is_sold'       => Purchase::where('item_id', $i->id)->exists(),
                 'message_count' => 0,
@@ -52,7 +49,7 @@ class UserProfileController extends Controller
                 'id'            => $p->item->id,
                 'trade_id'      => $p->trade ? $p->trade->id : null,
                 'name'          => $p->item->name,
-                'image_url'     => asset('storage/'.$p->item->image_path),
+                'image_url'     => asset('storage/' . $p->item->image_path),
                 'is_sold'       => true,
                 'message_count' => 0,
             ]);
@@ -71,7 +68,7 @@ class UserProfileController extends Controller
                 'id'            => $t->purchase->item->id,
                 'trade_id'      => $t->id,
                 'name'          => $t->purchase->item->name,
-                'image_url'     => asset('storage/'.$t->purchase->item->image_path),
+                'image_url'     => asset('storage/' . $t->purchase->item->image_path),
                 'is_sold'       => true,
                 'message_count' => $t->tradeMessages
                     ->where('is_read', false)
@@ -81,27 +78,32 @@ class UserProfileController extends Controller
 
         // 未読メッセージ数合計
         $totalUnread = $tradeBaseQuery
-            ->withCount(['tradeMessages as unread_count' => fn($q) => $q
-                ->where('is_read', false)
-                ->where('user_id', '!=', $user->id)
+            ->withCount([
+                'tradeMessages as unread_count' => fn($q) => $q
+                    ->where('is_read', false)
+                    ->where('user_id', '!=', $user->id)
             ])
             ->get()
             ->sum('unread_count');
 
         // 評価平均値と件数
         // (1) 自分が【出品者】だった取引に対する buyer_rating_points を集計
-        $sellerQuery = Trade::whereHas('purchase.item', fn($q) =>
-                $q->where('user_id', $user->id)
-            )
+        $sellerQuery = Trade::whereHas(
+            'purchase.item',
+            fn($q) =>
+            $q->where('user_id', $user->id)
+        )
             ->whereNotNull('buyer_rating_points');
 
         $sellerCount = $sellerQuery->count();
         $sellerSum   = $sellerQuery->sum('buyer_rating_points');
 
         // (2) 自分が【購入者】だった取引に対する seller_rating_points を集計
-        $buyerQuery = Trade::whereHas('purchase', fn($q) =>
-                $q->where('user_id', $user->id)
-            )
+        $buyerQuery = Trade::whereHas(
+            'purchase',
+            fn($q) =>
+            $q->where('user_id', $user->id)
+        )
             ->whereNotNull('seller_rating_points');
 
         $buyerCount = $buyerQuery->count();
@@ -133,21 +135,21 @@ class UserProfileController extends Controller
 
     /**
      * 認証済ユーザーの情報を返す
-     * GET  /api/user
+     * GET  /api/mypage/profile'
      */
     public function show(Request $request)
     {
-    $user = auth()->user();
+        $user = auth()->user();
 
-    // ここで必要な項目だけ抜き出して JSON で返していると仮定
-    return response()->json([
-        'id'                  => $user->id,
-        'name'                => $user->name,
-        'thumbnail_url'       => $user->thumbnail_path ? asset('storage/'.$user->thumbnail_path) : null,
-        'current_post_code'   => $user->current_post_code,
-        'current_address'     => $user->current_address,
-        'current_building'    => $user->current_building,
-    ]);
+        // ここで必要な項目だけ抜き出して JSON で返していると仮定
+        return response()->json([
+            'id'                  => $user->id,
+            'name'                => $user->name,
+            'thumbnail_url'       => $user->thumbnail_path ? asset('storage/' . $user->thumbnail_path) : null,
+            'current_post_code'   => $user->current_post_code,
+            'current_address'     => $user->current_address,
+            'current_building'    => $user->current_building,
+        ]);
     }
 
     /**
@@ -162,9 +164,8 @@ class UserProfileController extends Controller
         // サムネイル画像アップロードの処理
         if ($request->hasFile('image')) {
             // default/users/以外の旧ファイルを削除
-            if (!Str::startsWith($user->thumbnail_path, 'default/users/'))
-            {
-                Storage::disk('public')->delete($user->thumbnail_path );
+            if (!Str::startsWith($user->thumbnail_path, 'default/users/')) {
+                Storage::disk('public')->delete($user->thumbnail_path);
             }
             // 新しいファイルを保存（public/users ディレクトリ）
             $path = $request->file('image')->store('users', 'public');
@@ -185,5 +186,4 @@ class UserProfileController extends Controller
             'user' => $user
         ], 200);
     }
-
 }

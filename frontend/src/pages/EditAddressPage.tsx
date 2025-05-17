@@ -16,8 +16,6 @@ type EditRes = {
   shippingDefaults: ShippingDefaults;
 };
 
-type UpdateReq = ShippingDefaults;
-
 const EditAddressPage: React.FC = () => {
   const { itemId } = useParams<{ itemId: string }>();
   const navigate = useNavigate();
