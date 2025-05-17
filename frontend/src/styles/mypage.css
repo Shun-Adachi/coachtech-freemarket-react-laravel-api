@@ -1,0 +1,76 @@
+.profile__group {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 1000px;
+  margin: 0px auto 20px auto;
+}
+
+.profile__image {
+  width: 150px;
+  margin: 20px;
+  height: 150px;
+  object-fit: contain;
+  background-color: #e0e0e0;
+  border-radius: 50%;
+}
+
+.profile__group--detail {
+}
+
+.profile__label {
+  width: 100%;
+  margin: 0px auto 0px auto;
+  text-align: center;
+  color: #000;
+  font-family: Inter;
+  font-size: 36px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: normal;
+}
+
+.profile__link {
+  display: inline-flex; /* インラインフレックスに変更 */
+  align-items: center; /* 縦方向中央寄せ */
+  justify-content: center; /* 横方向中央寄せ（必要なら） */
+  height: 60px;
+  margin-right: 0;
+  margin-left: 10%;
+  padding: 10px 30px;
+  background-color: #ffffff;
+  border: 1px #f05454 solid;
+  border-radius: 5px;
+  color: #f05454;
+  font-size: 26px;
+  text-decoration: none;
+}
+
+.profile__group--rating {
+  font-family: "Arial Unicode MS", "Segoe UI Symbol", sans-serif;
+  width: 100%;
+  margin: 15px 0 15px 0;
+  display: flex;
+  justify-content: center;
+  font-size: 36px;
+  line-height: 1;
+  letter-spacing: 0;
+  color: #ffd700;
+  gap: 5px;
+}
+
+.profile__rating {
+  width: 40px;
+}
+
+@media (max-width: 1200px) {
+  .profile__rating {
+    width: 30px;
+  }
+
+  .profile__link {
+    margin-right: 0;
+    margin-left: 10%;
+    padding: 10px 10px;
+  }
+}

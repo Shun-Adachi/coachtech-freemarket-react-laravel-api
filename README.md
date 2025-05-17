@@ -11,16 +11,27 @@
 
 ## 使用技術（実行環境）
 
+### バックエンド
 - **OS**: Ubuntu 24.04.1 LTS
-- **環境構築**: Docker 27.3.1
-- **フレームワーク**: Laravel 8.x
-- **プログラミング言語**: PHP 7.4.9
-- **データベース**: MySQL 8.0.26
+- **コンテナ**: Docker 27.3.1 (docker-compose)
 - **Web サーバー**: Nginx 1.21.1
-- **バージョン管理**: Git
+- **言語／フレームワーク**: PHP 7.4.9 / Laravel 8.x
+- **データベース**: MySQL 8.0.26
+- **DB 管理ツール**: phpMyAdmin 5.x
+- **認証／API トークン**: Laravel Sanctum / Passport
+- **メール検証環境**: MailHog
 - **決済サービス**: Stripe
-- **メール検証環境**: MailHog（ログイン認証メールと取引完了メールの確認に使用）
-- **テスト環境**: PHPUnit
+- **テスト**: PHPUnit
+
+### フロントエンド
+- **言語**: TypeScript 4.x
+- **ライブラリ**: React 19.x
+- **バンドラ**: Create React App
+- **パッケージ管理**: npm 11.x / Yarn 1.x
+- **ルーティング**: React Router v7
+- **HTTP クライアント**: Axios 1.x
+- **状態管理**: React Hooks (useState / useEffect 等)
+- **スタイリング**: CSS Modules / 直接 CSS
 
 ---
 
@@ -29,8 +40,8 @@
 ### 1. リポジトリのクローン
 
 ```bash
-git clone git@github.com:Shun-Adachi/coachtech-free-market.git
-cd coachtech-free-market
+git clone git@github.com:Shun-Adachi/coachtech-free-market-react-spa.git
+cd coachtech-free-market-react-spa
 ```
 
 ### 2. Docker コンテナのビルドと起動
@@ -77,10 +88,11 @@ php artisan storage:link
 
 ### 開発環境
 
-- 商品一覧画面: <http://localhost/>
-- 会員登録画面: <http://localhost/register>
-- ログイン画面: <http://localhost/login>
+- 商品一覧画面: <http://localhost:3000/>
+- 会員登録画面: <http://localhost:3000/register>
+- ログイン画面: <http://localhost:3000/login>
 - MailHog: <http://localhost:8025>
+- phpMyAdmin: <http://localhost:8080>
 
 ---
 
@@ -146,6 +158,6 @@ php artisan test
 正常にテストが完了すると、以下のように表示されます。
 
 ```bash
-Tests: 36 passed
+Tests: 32 passed
 Time:  x.xxs
 ```

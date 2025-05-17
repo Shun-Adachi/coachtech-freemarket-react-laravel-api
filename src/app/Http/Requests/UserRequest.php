@@ -23,23 +23,14 @@ class UserRequest extends FormRequest
      */
     public function rules()
     {
-        $rules = [
-            'name' => 'required',
-            'current_post_code' => 'required | regex:/^\d{3}-\d{4}$/',
-            'current_address' => 'required',
+        return [
+            'name'              => ['required', 'string', 'max:255'],
+            'current_post_code' => ['required', 'regex:/^\d{3}-\d{4}$/'],
+            'current_address'   => ['required', 'string', 'max:255'],
+            'current_building'  => ['nullable', 'string', 'max:255'],
+            'image'             => ['nullable', 'mimes:jpg,jpeg,png'],
         ];
-
-        if (!$this->hasFile('image') && $this->temp_image) {
-            // 一時保存されている場合はチェックをスキップ
-            $rules['image'] = [];
-        } else {
-            // 通常のバリデーションルール
-            $rules['image'] = ['mimes:jpg,jpeg,png'];
-        }
-
-        return $rules;
     }
-
     public function messages()
     {
         return [
@@ -49,11 +40,5 @@ class UserRequest extends FormRequest
             'current_post_code.regex' => '郵便番号は8文字(ハイフンあり)の形で入力してください',
             'current_address.required' => '住所を入力してください',
         ];
-    }
-
-    protected function failedValidation(\Illuminate\Contracts\Validation\Validator $validator)
-    {
-        handleTempImageUpload($this, $validator);
-        parent::failedValidation($validator);
     }
 }

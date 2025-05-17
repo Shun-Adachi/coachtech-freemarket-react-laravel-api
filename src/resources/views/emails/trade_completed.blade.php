@@ -6,7 +6,7 @@
 {{ $trade->purchase->user->name }} さんとの取引が完了致しました。<br>
 詳細は以下のリンクよりご確認ください。
 
-@component('mail::button', ['url' => url('/trades/' . $trade->id . '/messages')])
+@component('mail::button', ['url' => config('app.frontend_url') . '/trades/' . $trade->id . '/messages'])
 取引の詳細を見る
 @endcomponent
 

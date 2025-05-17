@@ -4,9 +4,10 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Mail\Mailable;
 use Tests\TestCase;
 use App\Models\User;
+use App\Mail\LoginCodeMail;
+use App\Models\LoginCode;
 
 class LoginTest extends TestCase
 {
@@ -23,105 +24,134 @@ class LoginTest extends TestCase
     }
 
     /**
-     * メールアドレスが入力されていない場合、バリデーションメッセージが表示される
+     * メールアドレスが入力されていない場合、JSON 422 と検証エラーを返す
      *
      * @return void
      */
-    public function test_email_is_required_for_login()
+    public function test_email_is_required_for_login_via_api()
     {
-
-        $formData = [
-            'email' => '',
-            'password' => 'rootroot',
+        // パスワードだけは適当な文字列を入れておく
+        $payload = [
+            'email'    => '',
+            'password' => 'dummy-password',
         ];
-        $response = $this->post('/login', $formData);
-        $response->assertSessionHasErrors([
-            'email' => 'メールアドレスを入力してください',
-        ]);
+
+        // API に対して JSON リクエスト
+        $response = $this->postJson('/api/request-login-code', $payload);
+
+        // ステータス 422
+        $response->assertStatus(422);
+
+        // バリデーションエラーとして email が返っていること
+        $response->assertJsonValidationErrors(['email']);
+
+        // メッセージも確認したい場合
+        $this->assertEquals(
+            'メールアドレスを入力してください',
+            $response->json('errors.email.0')
+        );
     }
 
     /**
-     * パスワードが入力されていない場合、バリデーションメッセージが表示される
+     * パスワードが入力されていない場合、JSON 422 と検証エラーを返す
      *
      * @return void
      */
-    public function test_password_is_required_for_login()
+    public function test_password_is_required_for_login_via_api()
     {
-
-        $formData = [
-            'email' => 'root@example.com',
+        $payload = [
+            'email'    => 'root@example.com',
             'password' => '',
         ];
-        $response = $this->post('/login', $formData);
-        $response->assertSessionHasErrors([
-            'password' => 'パスワードを入力してください',
-        ]);
+
+        // メール＋パスワードで認証コードをリクエストするエンドポイント
+        $response = $this->postJson('/api/request-login-code', $payload);
+
+        // ステータス 422
+        $response->assertStatus(422);
+
+        // password フィールドに検証エラーがあること
+        $response->assertJsonValidationErrors(['password']);
+
+        // エラーメッセージをピンポイントで確認したい場合
+        $this->assertEquals(
+            'パスワードを入力してください',
+            $response->json('errors.password.0')
+        );
     }
 
 
     /**
-     * 入力情報が間違っている場合、バリデーションメッセージが表示される
+     * 入力情報が誤っている場合、401 とエラーメッセージを返す
      *
      * @return void
      */
-    public function test_invalid_login_shows_validation_message()
+    public function test_invalid_login_shows_error_via_api()
     {
-
-        $formData = [
-            'email' => 'notregistered@example.com',
+        $payload = [
+            'email'    => 'notregistered@example.com',
             'password' => 'wrongpassword',
         ];
-        $response = $this->post('/login', $formData);
-        $response->assertSessionHasErrors([
-            'email' => 'ログイン情報が登録されていません',
-        ]);
+
+        $response = $this->postJson('/api/request-login-code', $payload);
+
+        // 認証失敗時は 401 を返し、メッセージに「認証に失敗しました。」が含まれる
+        $response->assertStatus(401)
+            ->assertJson(['message' => '認証に失敗しました。']);
     }
 
-
     /**
-     * 正しい情報が入力された場合メールが送信され、メールに記載のURLからログイン出来る
+     * 正しい情報が入力された場合、認証コードメールが送信され、
+     * そのコードでログイン用トークンが発行される
      *
      * @return void
      */
-    public function test_login_sends_verification_email_and_verifies_login()
+    public function test_login_sends_code_and_verifies_login_via_api()
     {
-
+        // メール送信をモック
         Mail::fake();
 
-        // ログインリクエストを送信
-        $formData = [
-            'email' => 'root@example.com',
+        // シーディング済みのユーザーを取得（seed で root@example.com がいる想定）
+        $user = User::where('email', 'root@example.com')->firstOrFail();
+
+        // 1) 認証コードリクエスト
+        $payload = [
+            'email'    => 'root@example.com',
             'password' => 'rootroot',
         ];
-        $user = User::where('email', $formData['email'])->first();
-        $response = $this->post('/login', $formData);
+        $res1 = $this->postJson('/api/request-login-code', $payload);
 
-        // メール送信後のリダイレクト先とメッセージの確認
-        $response->assertRedirect('/login');
-        $response->assertSessionHas('message', 'ログインメールを送信しました');
+        // → 200 とメッセージを返す
+        $res1->assertOk()
+            ->assertJson(['message' => '認証コードをメールで送信しました']);
 
-        // メール送信の確認
-        Mail::assertSent(function (Mailable $mail) use ($user) {
-            return $mail->hasTo('root@example.com');
+        // → 正しい宛先にメールが送られている
+        Mail::assertSent(LoginCodeMail::class, function ($mail) use ($user) {
+            return $mail->hasTo($user->email);
         });
 
-        // トークンが生成され、保存されていることを確認
-        $user->refresh();
-        $this->assertNotNull($user->login_token);
+        // → DB にコードが保存されている
+        $record = LoginCode::where('email', $user->email)->first();
+        $this->assertNotNull($record, 'LoginCode レコードが見つかりません');
 
-        // メールの認証リンクにアクセス
-        $token = $user->login_token;
-        $verifyResponse = $this->get("/verify-login?token={$token}");
+        // 2) コード検証リクエスト
+        $verifyPayload = array_merge($payload, [
+            'code' => $record->code,
+        ]);
+        $res2 = $this->postJson('/api/verify-login-code', $verifyPayload);
 
-        // 認証ログインが成功し、リダイレクトされることを確認
-        $verifyResponse->assertRedirect('/');
-        $verifyResponse->assertSessionHas('message', 'ログインしました');
+        // → 200 と user＋token を返す
+        $res2->assertOk()
+            ->assertJsonStructure([
+                'user'  => ['id', 'name', 'email'],
+                'token',
+            ]);
 
-        // トークンが無効化されていることを確認
-        $user->refresh();
-        $this->assertNull($user->login_token);
-
-        // ユーザーがログイン状態であることを確認
-        $this->assertAuthenticatedAs($user);
+        // → 発行されたトークンで認証済み API にアクセスできる
+        $token = $res2->json('token');
+        $this->withToken($token)
+            ->getJson('/api/user')
+            ->assertOk()
+            ->assertJson(['id' => $user->id]);
     }
 }
