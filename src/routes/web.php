@@ -62,3 +62,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/trades/{trade}/rate', [TradeRatingController::class, 'store']);
     });
 });
+
+// すべてのリクエストをReactに転送
+Route::get('/{any}', function () {
+    return view('app');
+})->where('any', '.*');
