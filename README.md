@@ -86,6 +86,12 @@ php artisan migrate --seed
 php artisan storage:link
 ```
 
+```bash
+# プロジェクト直下で
+sudo chown -R $USER:www-data src/storage src/bootstrap/cache
+sudo chmod -R 775 src/storage src/bootstrap/cache
+```
+
 ---
 
 ## URL 一覧
