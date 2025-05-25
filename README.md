@@ -9,6 +9,8 @@
 - **非会員ユーザー**: 商品リストの閲覧、商品の検索、商品詳細の閲覧
 - **会員ユーザー**: プロフィール編集、商品の出品、購入、コメント投稿、お気に入り機能、取引チャット機能
 
+<img src="./diagram/index.png" alt="index" width="800">
+
 ---
 
 ## 使用技術（実行環境）
@@ -82,6 +84,12 @@ docker-compose exec php bash
 php artisan key:generate
 php artisan migrate --seed
 php artisan storage:link
+```
+
+```bash
+# プロジェクト直下で
+sudo chown -R $USER:www-data src/storage src/bootstrap/cache
+sudo chmod -R 775 src/storage src/bootstrap/cache
 ```
 
 ---
